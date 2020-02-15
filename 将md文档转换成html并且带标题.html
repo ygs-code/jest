@@ -1,0 +1,115 @@
+<html>
+  <head>
+	  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>i5ting_ztree_toc:将md文档转换成html并且带标题</title>
+		<link href="toc/style/github-bf51422f4bb36427d391e4b75a1daa083c2d840e.css" media="all" rel="stylesheet" type="text/css"/>
+		<link href="toc/style/github2-d731afd4f624c99a4b19ad69f3083cd6d02b81d5.css" media="all" rel="stylesheet" type="text/css"/>
+		<link href="toc/css/zTreeStyle/zTreeStyle.css" media="all" rel="stylesheet" type="text/css"/>
+	  <style>
+		pre {
+		    counter-reset: line-numbering;
+		    border: solid 1px #d9d9d9;
+		    border-radius: 0;
+		    background: #fff;
+		    padding: 0;
+		    line-height: 23px;
+		    margin-bottom: 30px;
+		    white-space: pre;
+		    overflow-x: auto;
+		    word-break: inherit;
+		    word-wrap: inherit;
+		}
+
+		pre a::before {
+		  content: counter(line-numbering);
+		  counter-increment: line-numbering;
+		  padding-right: 1em; /* space after numbers */
+		  width: 25px;
+		  text-align: right;
+		  opacity: 0.7;
+		  display: inline-block;
+		  color: #aaa;
+		  background: #eee;
+		  margin-right: 16px;
+		  padding: 2px 10px;
+		  font-size: 13px;
+		  -webkit-touch-callout: none;
+		  -webkit-user-select: none;
+		  -khtml-user-select: none;
+		  -moz-user-select: none;
+		  -ms-user-select: none;
+		  user-select: none;
+		}
+
+		pre a:first-of-type::before {
+		  padding-top: 10px;
+		}
+
+		pre a:last-of-type::before {
+		  padding-bottom: 10px;
+		}
+
+		pre a:only-of-type::before {
+		  padding: 10px;
+		}
+
+		.highlight { background-color: #ffffcc } /* RIGHT */
+		</style>
+  </head>
+  <body>
+	  <div>
+				<div style='width:25%;'>
+						<ul id="tree" class="ztree" style='width:100%'>
+
+						</ul>
+				</div>
+        <div id='readme' style='width:70%;margin-left:20%;'>
+          	<article class='markdown-body'>
+            	<h1 id="-md-html-"><a href="https://www.cnblogs.com/he-zhi/p/6790687.html">如何将md文件转换成带目录的html文件</a></h1>
+<h3 id="-node">配置环境node</h3>
+<ul>
+<li><p>去官网下一个node安装包，下一步下一步：</p>
+<h3 id="-node-npm-">由于现在的node都自带npm，</h3>
+<h3 id="-">直接</h3>
+<pre><code>npm install -g i5ting_toc
+</code></pre></li>
+</ul>
+<h3 id="-i5ting_toc-">这样安装好了i5ting_toc这个包，</h3>
+<h3 id="-md-">进入你实现准备好md文件，然后通过命令行进入到该文件</h3>
+<pre><code>i5ting_toc -f note.md
+</code></pre><p>这里note.md是你自己的文件名</p>
+<h1 id="-">修改最外层第一个标题</h1>
+<p>运行上面命令之后会生成一个preview文件夹，文件夹有js，style，js和html，html就是会生成带有目录的html 并且带跳转。但是外层的标题名字默认为&quot;Table of Content&quot; 那么要修改他，就要把html的底部的js修改为一下内容</p>
+<pre><code>$(document).ready(function(){
+    var css_conf = eval(markdown_panel_style);
+    $(&#39;#readme&#39;).css(css_conf)
+    var conf = eval(jquery_ztree_toc_opts);
+    conf={
+        ...conf,
+        _header_nodes: [{ id:1, pId:0, name:&quot;将md文档转换成html并且带标题&quot;,open:true}],
+    }
+        $(&#39;#tree&#39;).ztree_toc(conf);
+});
+</code></pre><p>主要是修改_header_nodes里面的name即可</p>
+
+          	</article>
+        </div>
+		</div>
+  </body>
+</html>
+<script type="text/javascript" src="toc/js/jquery-1.4.4.min.js"></script>
+<script type="text/javascript" src="toc/js/jquery.ztree.all-3.5.min.js"></script>
+<script type="text/javascript" src="toc/js/ztree_toc.js"></script>
+<script type="text/javascript" src="toc_conf.js"></script>
+
+<SCRIPT type="text/javascript" >
+<!--
+$(document).ready(function(){
+    var css_conf = eval(markdown_panel_style);
+    $('#readme').css(css_conf)
+    
+    var conf = eval(jquery_ztree_toc_opts);
+		$('#tree').ztree_toc(conf);
+});
+//-->
+</SCRIPT>

@@ -1,0 +1,2275 @@
+<html>
+  <head>
+	  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>i5ting_ztree_toc:前端单元Jest 测试框架笔记</title>
+		<link href="toc/style/github-bf51422f4bb36427d391e4b75a1daa083c2d840e.css" media="all" rel="stylesheet" type="text/css"/>
+		<link href="toc/style/github2-d731afd4f624c99a4b19ad69f3083cd6d02b81d5.css" media="all" rel="stylesheet" type="text/css"/>
+		<link href="toc/css/zTreeStyle/zTreeStyle.css" media="all" rel="stylesheet" type="text/css"/>
+	  <style>
+		pre {
+		    counter-reset: line-numbering;
+		    border: solid 1px #d9d9d9;
+		    border-radius: 0;
+		    background: #fff;
+		    padding: 0;
+		    line-height: 23px;
+		    margin-bottom: 30px;
+		    white-space: pre;
+		    overflow-x: auto;
+		    word-break: inherit;
+		    word-wrap: inherit;
+		}
+
+		pre a::before {
+		  content: counter(line-numbering);
+		  counter-increment: line-numbering;
+		  padding-right: 1em; /* space after numbers */
+		  width: 25px;
+		  text-align: right;
+		  opacity: 0.7;
+		  display: inline-block;
+		  color: #aaa;
+		  background: #eee;
+		  margin-right: 16px;
+		  padding: 2px 10px;
+		  font-size: 13px;
+		  -webkit-touch-callout: none;
+		  -webkit-user-select: none;
+		  -khtml-user-select: none;
+		  -moz-user-select: none;
+		  -ms-user-select: none;
+		  user-select: none;
+		}
+
+		pre a:first-of-type::before {
+		  padding-top: 10px;
+		}
+
+		pre a:last-of-type::before {
+		  padding-bottom: 10px;
+		}
+
+		pre a:only-of-type::before {
+		  padding: 10px;
+		}
+
+		.highlight { background-color: #ffffcc } /* RIGHT */
+		</style>
+  </head>
+  <body>
+	  <div>
+				<div style='width:25%;'>
+						<ul id="tree" class="ztree" style='width:100%'>
+
+						</ul>
+				</div>
+        <div id='readme' style='width:70%;margin-left:20%;'>
+          	<article class='markdown-body'>
+            	<h1 id="jest-">jest 基本介绍</h1>
+<ul>
+<li>jest 是facebook推出的一款测试框架，集成了 Mocha，chai，jsdom，sinon等功能。</li>
+<li>官网文档 <a href="https://jestjs.io/docs/zh-Hans/using-matchers">https://jestjs.io/docs/zh-Hans/using-matchers</a></li>
+</ul>
+<h1 id="-">环境配置</h1>
+<p>全局安装 jest</p>
+<pre><code>npm i —g jest
+</code></pre><p>项目安装</p>
+<pre><code>npm i --save-dev jest
+</code></pre><h2 id="jest-package-json-jest-config-js-">jest<code>配置通常在</code>package.json<code>或</code>jest.config.js`中</h2>
+<pre><code>//jest.conf.js
+const path = require(&#39;path&#39;)
+
+module.exports = {
+  rootDir: path.resolve(__dirname, &#39;../../&#39;), // 入口目录
+  moduleFileExtensions: [ //匹配js 
+    &#39;js&#39;,
+    &#39;json&#39;,
+    &#39;vue&#39;
+  ],
+  moduleNameMapper: {  //  webpack里alias的别名处理
+    &#39;^@/(.*)$&#39;: &#39;&lt;rootDir&gt;/src/$1&#39;
+  },
+  transform: {
+    &#39;^.+\\.js$&#39;: &#39;&lt;rootDir&gt;/node_modules/babel-jest&#39;,
+    &#39;.*\\.(vue)$&#39;: &#39;&lt;rootDir&gt;/node_modules/vue-jest&#39;
+  },
+  snapshotSerializers: [&#39;&lt;rootDir&gt;/node_modules/jest-serializer-vue&#39;],
+  setupFiles: [&#39;&lt;rootDir&gt;/test/unit/setup&#39;],
+  mapCoverage: true,
+  coverageDirectory: &#39;&lt;rootDir&gt;/test/unit/coverage&#39;,
+  collectCoverageFrom: [ //测试覆盖率 数组来定义需要收集测试覆盖率信息的文件。
+    &#39;src/**/*.{js,vue}&#39;,
+    &#39;!src/main.js&#39;,
+    &#39;!src/router/index.js&#39;,
+    &#39;!**/node_modules/**&#39;
+  ]
+}
+
+</code></pre><p>package.json 配置</p>
+<pre><code>  &quot;scripts&quot;: {
+    &quot;unit&quot;: &quot;jest --config test/unit/jest.conf.js --coverage&quot;,
+    &quot;test&quot;: &quot;npm run unit&quot;,
+  },
+</code></pre><h1 id="jest-">Jest测试遇到的问题</h1>
+<h2 id="-webpack-alias-">关于webpack里alias的问题</h2>
+<p>由于在webpack配置了路径别名，所以在你@/shallow/mount/render时报路径错误</p>
+<p>解决方案</p>
+<p>// 在jest.conf.js里加入
+ &quot;moduleNameMapper&quot;: {
+​      &quot;^components(.*)$&quot;: &quot;<rootDir>/src/components$1&quot;,
+  },</p>
+<h2 id="enzyme-adapter-">enzyme启动报需要Adapter错误</h2>
+<p>添加package.json配置</p>
+<p>&quot;setupTestFrameworkScriptFile&quot;: &quot;<rootDir>/src/<strong>test</strong>/config.js&quot;,
+编写config.js文件</p>
+<p>const Enzyme = require(&#39;enzyme&#39;);
+const EnzymeAdapter = require(&#39;enzyme-adapter-react-16&#39;); // 数字根据你的react版本号改变</p>
+<p>// Setup enzyme&#39;s react adapter
+Enzyme.configure({ adapter: new EnzymeAdapter() });
+node_modules里的依赖报错</p>
+<h2 id="-testenvirnoment">检测testEnvirnoment</h2>
+<p>&quot;testEnvironment&quot;: &quot;jsdom&quot;, // 可以设置为node
+添加路径忽略</p>
+<p>&quot;testPathIgnorePatterns&quot;: [<br>​      &quot;[/\\]node_modules[/\\].+\.(js|jsx|mjs)$&quot;,
+​      &quot;<rootDir>/node_modules/&quot;
+ ],</p>
+<h1 id="-">普通匹配器</h1>
+<p>最简单的测试值的方法是看是否精确匹配。</p>
+<pre><code>test(&#39;two plus two is four&#39;, () =&gt; {
+  expect(2 + 2).toBe(4);
+});
+</code></pre><h1 id="-">判断对象</h1>
+<p><code>toBe</code> 使用 <code>Object.is</code> 来测试精确相等。 如果您想要检查对象的值，请使用 <code>toEqual</code> 代替：</p>
+<p><code>toEqual</code> 递归检查对象或数组的每个字段。</p>
+<pre><code>test(&#39;object assignment&#39;, () =&gt; {
+  const data = {one: 1};
+  data[&#39;two&#39;] = 2;
+  expect(data).toEqual({one: 1, two: 2});
+});
+</code></pre><h1 id="-">相反的匹配</h1>
+<pre><code>test(&#39;adding positive numbers is not zero&#39;, () =&gt; {
+      expect(1 + 2).not.toBe(0);
+
+});
+test(&#39;adding positive numbers is not zero&#39;, () =&gt; {
+  for (let a = 1; a &lt; 10; a++) {
+    for (let b = 1; b &lt; 10; b++) {
+      expect(a + b).not.toBe(0);
+    }
+  }
+});
+</code></pre><h1 id="truthiness">Truthiness</h1>
+<p>在测试中，你有时需要区分 <code>undefined</code>、 <code>null</code>，和 <code>false</code>，但有时你又不需要区分。 Jest 让你明确你想要什么。</p>
+<ul>
+<li><code>toBeNull</code> 只匹配 <code>null</code></li>
+<li><code>toBeUndefined</code> 只匹配 <code>undefined</code></li>
+<li><code>toBeDefined</code> 与 <code>toBeUndefined</code> 相反</li>
+<li><code>toBeTruthy</code> 匹配任何 <code>if</code> 语句为真 true</li>
+<li><code>toBeFalsy</code> 匹配任何 <code>if</code> 语句为假 false</li>
+</ul>
+<p>例如：</p>
+<pre><code>test(&#39;null&#39;, () =&gt; {
+  const n = null;
+  expect(n).toBeNull(); // toBeNull  只匹配 null 
+  expect(n).toBeDefined(); // 
+  expect(n).not.toBeUndefined();
+  expect(n).not.toBeTruthy();
+  expect(n).toBeFalsy();
+});
+
+test(&#39;zero&#39;, () =&gt; {
+  const z = 0;
+  expect(z).not.toBeNull();
+  expect(z).toBeDefined();
+  expect(z).not.toBeUndefined();
+  expect(z).not.toBeTruthy();
+  expect(z).toBeFalsy();
+});
+</code></pre><h1 id="-">数字</h1>
+<p>大多数的比较数字有等价的匹配器。</p>
+<pre><code>test(&#39;two plus two&#39;, () =&gt; {
+  const value = 2 + 2;
+  expect(value).toBeGreaterThan(3); // 大于
+  expect(value).toBeGreaterThanOrEqual(3.5); // 大于或者等于
+  expect(value).toBeLessThan(5); // 小于
+  expect(value).toBeLessThanOrEqual(4.5); // 小于或者等于
+
+  // toBe and toEqual are equivalent for numbers
+  expect(value).toBe(4); // 等于
+  expect(value).toEqual(4); // 等于
+});
+</code></pre><p>对于比较浮点数相等，使用 <code>toBeCloseTo</code> 而不是 <code>toEqual</code>，因为你不希望测试取决于一个小小的舍入误差。</p>
+<pre><code>test(&#39;两个浮点数字相加&#39;, () =&gt; {
+  const value = 0.1 + 0.2;
+  //expect(value).toBe(0.3);           这句会报错，因为浮点数有舍入误差
+  expect(value).toBeCloseTo(0.3); // 这句可以运行
+});
+</code></pre><h1 id="-">字符串</h1>
+<p>您可以检查对具有 <code>toMatch</code> 正则表达式的字符串︰</p>
+<pre><code>test(&#39;there is no I in team&#39;, () =&gt; {
+  expect(&#39;team&#39;).not.toMatch(/I/); // 没有字符串
+});
+
+test(&#39;but there is a &quot;stop&quot; in Christoph&#39;, () =&gt; {
+  expect(&#39;Christoph&#39;).toMatch(/stop/); // toMatch含有字符串
+});
+</code></pre><h1 id="arrays-and-iterables">Arrays and iterables</h1>
+<p>你可以通过 <code>toContain</code>来检查一个数组或可迭代对象是否包含某个特定项：</p>
+<pre><code>const shoppingList = [
+  &#39;diapers&#39;,
+  &#39;kleenex&#39;,
+  &#39;trash bags&#39;,
+  &#39;paper towels&#39;,
+  &#39;beer&#39;,
+];
+
+test(&#39;the shopping list has beer on it&#39;, () =&gt; {
+  expect(shoppingList).toContain(&#39;beer&#39;);
+  expect(new Set(shoppingList)).toContain(&#39;beer&#39;);
+});
+</code></pre><h1 id="-">例外</h1>
+<p>如果你想要测试的特定函数抛出一个错误，在它调用时，使用 <code>toThrow</code>。</p>
+<pre><code>function compileAndroidCode() {
+  throw new Error(&#39;you are using the wrong JDK&#39;);
+}
+
+test(&#39;compiling android goes as expected&#39;, () =&gt; {
+  expect(compileAndroidCode).toThrow();
+  expect(compileAndroidCode).toThrow(Error);
+
+  // You can also use the exact error message or a regexp
+  expect(compileAndroidCode).toThrow(&#39;you are using the wrong JDK&#39;);
+  expect(compileAndroidCode).toThrow(/JDK/);
+});
+</code></pre><h1 id="-">异步</h1>
+<h2 id="-">回调</h2>
+<p>最常见的异步模式是回调函数。</p>
+<p>例如，假设您有一个 <code>fetchData(callback)</code> 函数，获取一些数据并在完成时调用 <code>callback(data)</code>。 You want to test that this returned data is the string <code>&#39;peanut butter&#39;</code>.</p>
+<p>默认情况下，Jest 测试一旦执行到末尾就会完成。 那意味着该测试将<em>不会</em>按预期工作：</p>
+<pre><code>// 不要这样做！
+test(&#39;the data is peanut butter&#39;, () =&gt; {
+  function callback(data) {
+    expect(data).toBe(&#39;peanut butter&#39;);
+  }
+
+  fetchData(callback);
+});
+</code></pre><p>问题在于一旦<code>fetchData</code>执行结束，此测试就在没有调用回调函数前结束。</p>
+<p>还有另一种形式的 <code>test</code>，解决此问题。 使用单个参数调用 <code>done</code>，而不是将测试放在一个空参数的函数。 Jest会等<code>done</code>回调函数执行结束后，结束测试。</p>
+<pre><code>function fetchData(callback){
+    setTimeout(()=&gt;{
+        callback&amp;&amp;callback(&#39;peanut butter&#39;)
+    },3000)
+}
+test(&#39;the data is peanut butter&#39;, done =&gt; {
+  function callback(data) {
+    try {
+        //远程请求的值回来做判断
+      expect(data).toBe(&#39;peanut butter&#39;);
+      done();
+    } catch (error) {
+      done(error);
+    }
+  }
+  // ajax远程请求数据
+  fetchData(callback);
+});
+</code></pre><h2 id="promises">Promises</h2>
+<p>举个例子，如果 <code>fetchData</code> 不使用回调函数，而是返回一个 Promise，其解析值为字符串 <code>&#39;peanut butter&#39;</code> 我们可以这样测试：</p>
+<pre><code>function fetchData(callback){
+    return new Promise((resolve,reject)=&gt;{
+                setTimeout(()=&gt;{
+                         reject(&#39;error&#39;);
+                    },3000)
+    })  
+}
+
+
+test(&#39;the fetch fails with an error&#39;, () =&gt; {
+//    expect.assertions(1);
+  return fetchData()
+  .then((data)=&gt;{
+        return   expect(data).toBe(&#39;peanut butter11&#39;);
+    })
+    .catch((e)=&gt;{
+          console.log(e)
+          return   &#39;error&#39;
+    });
+});
+
+</code></pre><h2 id="jest-assertion-">Jest中断言assertion的理解</h2>
+<p>前言：最近在看Jest官方文档的时候，对assertion的理解不够透彻，和大佬们讨论之后得出自己的一些感悟，特此记录一下</p>
+<pre><code>function fetchData(callback){
+    return new Promise((resolve,reject)=&gt;{
+                setTimeout(()=&gt;{
+                         reject(&#39;error&#39;);
+                    },3000)
+    })  
+}
+
+
+test(&#39;the fetch fails with an error&#39;, () =&gt; {
+//    expect.assertions(1); // 注释掉不报错，不注释掉就报错
+  return fetchData()
+  .then((data)=&gt;{
+        return   expect(data).toBe(&#39;peanut butter11&#39;);
+    })
+    .catch((e)=&gt;{
+          console.log(e)
+          return   &#39;error&#39;
+    });
+});
+
+</code></pre><p>这个时候是不会报错的，而我们希望它能够报错进行提醒。</p>
+<p>如果我们指定了断言的次数之后，如果没有出现这么多个断言的时候，就会报错。</p>
+<p>下面有断言就不会报错</p>
+<pre><code>function fetchData(callback){
+    return new Promise((resolve,reject)=&gt;{
+                setTimeout(()=&gt;{
+                         reject(&#39;error&#39;);
+                    },3000)
+    })  
+}
+
+
+test(&#39;the fetch fails with an error&#39;, () =&gt; {
+// 不注释这也不会报错
+   expect.assertions(1);
+  return fetchData()
+  .then((data)=&gt;{
+        return   expect(data).toBe(&#39;peanut butter11&#39;);
+    })
+    .catch((e)=&gt;{
+          console.log(e)
+          // 有断言
+          return   expect(e).toMatch(&#39;error&#39;)
+    });
+});
+
+</code></pre><h2 id="-resolves-rejects"><code>.resolves</code> / <code>.rejects</code></h2>
+<p>您也可以在 expect 语句中使用 <code>.resolves</code> 匹配器，Jest 将等待此 Promise 解决。 如果承诺被拒绝，则测试将自动失败。</p>
+<pre><code>function fetchData(callback){
+    return new Promise((resolve,reject)=&gt;{
+                setTimeout(()=&gt;{
+                         resolve(&#39;peanut butter&#39;);
+                    },3000)
+    })  
+}
+
+
+test(&#39;the data is peanut butter&#39;, () =&gt; {
+    // 测试是否resolves 成功 并且返回字符串 peanut butter
+  return expect(fetchData()).resolves.toBe(&#39;peanut butter&#39;);
+});
+</code></pre><h2 id="async-await">Async/Await</h2>
+<p>或者，您可以在测试中使用 <code>async</code> 和 <code>await</code>。 To write an async test, use the <code>async</code> keyword in front of the function passed to <code>test</code>. 例如，可以用来测试相同的 <code>fetchData</code> 方案︰</p>
+<pre><code>function fetchData(){
+    return new Promise((resolve,reject)=&gt;{
+                setTimeout(()=&gt;{
+                         resolve(&#39;peanut butter&#39;);
+                    },3000)
+    })  
+}
+
+test(&#39;the data is peanut butter&#39;, async () =&gt; {
+  const data = await fetchData();
+  expect(data).toBe(&#39;peanut butter&#39;);
+});
+
+test(&#39;the fetch fails with an error&#39;, async () =&gt; {
+  // expect.assertions(1);
+  try {
+    await fetchData();
+  } catch (e) {
+     expect(e).toMatch(&#39;error&#39;);
+  }
+});
+</code></pre><p>您可以使用.resolves或.rejects组合async和await。</p>
+<pre><code>function fetchData(){
+    return new Promise((resolve,reject)=&gt;{
+                setTimeout(()=&gt;{
+                         resolve(&#39;peanut butter&#39;);
+                    },3000)
+    })  
+}
+
+test(&#39;the data is peanut butter&#39;, async () =&gt; {
+  await expect(fetchData()).resolves.toBe(&#39;peanut butter&#39;);
+});
+
+
+</code></pre><pre><code>function fetchData(){
+    return new Promise((resolve,rejects)=&gt;{
+                setTimeout(()=&gt;{
+                         rejects(&#39;error&#39;);
+                    },3000)
+    })  
+}
+
+
+test(&#39;the fetch fails with an error&#39;, async () =&gt; {
+  await expect(fetchData()).rejects.toMatch(&#39;error&#39;);
+});
+</code></pre><h1 id="setup-and-teardown">Setup and Teardown</h1>
+<h2 id="-beforeeach-aftereach">为多次测试重复设置beforeEach和afterEach</h2>
+<p>如果你有一些要为多次测试重复设置的工作，你可以使用 <code>beforeEach</code> 和 <code>afterEach</code>。</p>
+<pre><code>
+beforeEach(() =&gt; {
+  console.log(&#39;beforeEach&#39;)
+});
+afterEach(() =&gt; {
+ console.log(&#39;afterEach&#39;)
+});
+
+test(&#39;city database has Vienna&#39;, () =&gt; {
+  expect(&#39;Vienna&#39;).toBeTruthy();
+});
+test(&#39;city database has Vienna&#39;, () =&gt; {
+  expect(&#39;San Juan&#39;).toBeTruthy();
+});
+</code></pre><p>这里我们看到上面有两个测试用例所以会执行两次beforeEach和afterEach</p>
+<h2 id="-">一次性设置</h2>
+<p>在某些情况下，你只需要在文件的开头做一次设置。 This can be especially bothersome when the setup is asynchronous, so you can&#39;t do it inline. Jest 提供 <code>beforeAll</code> 和 <code>afterAll</code> 处理这种情况。</p>
+<pre><code>beforeAll(() =&gt; {
+   console.log(&#39;beforeAll&#39;)
+});
+
+afterAll(() =&gt; {
+   console.log(&#39;afterAll&#39;)
+});
+beforeEach(() =&gt; {
+  console.log(&#39;beforeEach&#39;)
+});
+afterEach(() =&gt; {
+ console.log(&#39;afterEach&#39;)
+});
+test(&#39;city database has Vienna&#39;, () =&gt; {
+  expect(&#39;Vienna&#39;).toBeTruthy();
+});
+test(&#39;city database has Vienna&#39;, () =&gt; {
+  expect(&#39;San Juan&#39;).toBeTruthy();
+});
+</code></pre><p>上面我们看到不管有多少个测试用例我们的beforeAll和afterAll方法只是调用一次而已</p>
+<h2 id="-">作用域</h2>
+<p>默认情况下，<code>before</code> 和 <code>after</code> 的块可以应用到文件中的每个测试。 此外可以通过 <code>describe</code> 块来将测试分组。 当 <code>before</code> 和 <code>after</code> 的块在 <code>describe</code> 块内部时，则其只适用于该 <code>describe</code> 块内的测试。</p>
+<p>例如，我们不仅有一个城市数据库，而且还有一个食品数据库。 我们可以为不同的测试进行不同的设置：</p>
+<pre><code>// Applies to all tests in this file
+beforeEach(() =&gt; {
+  console.log(&#39;外面的beforeEach&#39;)
+});
+
+test(&#39;city database has Vienna&#39;, () =&gt; {
+  expect(true).toBeTruthy();
+});
+
+test(&#39;city database has San Juan&#39;, () =&gt; {
+  expect(true).toBeTruthy();
+});
+
+describe(&#39;matching cities to foods&#39;, () =&gt; {
+  // Applies only to tests in this describe block
+  beforeEach(() =&gt; {
+   console.log(&#39;里面的beforeEach&#39;)
+  });
+
+  test(&#39;Vienna &lt;3 sausage&#39;, () =&gt; {
+    expect(true).toBe(true);
+  });
+
+  test(&#39;San Juan &lt;3 plantains&#39;, () =&gt; {
+    expect(true).toBe(true);
+  });
+});
+</code></pre><p>我们可以看到日志，外面的输出4次，里面的输出2次</p>
+<p>​      外面的beforeEach
+​<br>​      外面的beforeEach
+​<br>​      外面的beforeEach</p>
+<p>​      里面的beforeEach
+​<br>​      外面的beforeEach</p>
+<p>​      里面的beforeEach</p>
+<p>注意，顶级的 <code>beforeEach</code> 在 <code>describe</code> 块级的 <code>beforeEach</code> 之前被执行。 这可能有助于说明所有钩子的执行顺序。</p>
+<pre><code>beforeAll(() =&gt; console.log(&#39;1 - beforeAll&#39;));
+afterAll(() =&gt; console.log(&#39;1 - afterAll&#39;));
+beforeEach(() =&gt; console.log(&#39;1 - beforeEach&#39;));
+afterEach(() =&gt; console.log(&#39;1 - afterEach&#39;));
+test(&#39;&#39;, () =&gt; console.log(&#39;1 - test&#39;));
+describe(&#39;Scoped / Nested block&#39;, () =&gt; {
+  beforeAll(() =&gt; console.log(&#39;2 - beforeAll&#39;));
+  afterAll(() =&gt; console.log(&#39;2 - afterAll&#39;));
+  beforeEach(() =&gt; console.log(&#39;2 - beforeEach&#39;));
+  afterEach(() =&gt; console.log(&#39;2 - afterEach&#39;));
+  test(&#39;&#39;, () =&gt; console.log(&#39;2 - test&#39;));
+});
+
+// 1 - beforeAll
+// 1 - beforeEach
+// 1 - test
+// 1 - afterEach
+// 2 - beforeAll
+// 1 - beforeEach
+// 2 - beforeEach
+// 2 - test
+// 2 - afterEach
+// 1 - afterEach
+// 2 - afterAll
+// 1 - afterAll
+</code></pre><h2 id="desribe-test-">desribe和test块的执行顺序</h2>
+<p>Jest 会在所有真正的测试开始<em>之前</em>执行测试文件里所有的 describe 处理程序（handlers）,jest中没有嵌套执行顺序而是从上到下顺序，先执行所有的desribe，然后在执行test程序，test程序也样没有嵌套顺序只有上下顺序</p>
+<pre><code>describe(&#39;outer&#39;, () =&gt; {
+  console.log(&#39;describe outer-a&#39;);
+
+  describe(&#39;describe inner 1&#39;, () =&gt; {
+    console.log(&#39;describe inner 1&#39;);
+    test(&#39;test 1&#39;, () =&gt; {
+      console.log(&#39;test for describe inner 1&#39;);
+      expect(true).toEqual(true);
+    });
+
+
+    describe(&#39;describe inner 1-1&#39;, () =&gt; {
+        console.log(&#39;describe inner 1-1&#39;);
+         test(&#39;test 1&#39;, () =&gt; {
+            console.log(&#39;test for describe inner 1-1&#39;);
+            expect(true).toEqual(true);
+         });
+    });
+  });
+
+  console.log(&#39;describe outer-b&#39;);
+
+  test(&#39;test 1&#39;, () =&gt; {
+    console.log(&#39;test for describe outer&#39;);
+    expect(true).toEqual(true);
+  });
+
+  describe(&#39;describe inner 2&#39;, () =&gt; {
+    console.log(&#39;describe inner 2&#39;);
+    test(&#39;test for describe inner 2&#39;, () =&gt; {
+      console.log(&#39;test for describe inner 2&#39;);
+      expect(false).toEqual(false);
+    });
+  });
+
+  console.log(&#39;describe outer-c&#39;);
+});
+</code></pre><p>输出日志</p>
+<p> console.log <strong>tests</strong>\desribe和test块的执行顺序.js:2
+​      describe outer-a
+​    console.log <strong>tests</strong>\desribe和test块的执行顺序.js:5
+​      describe inner 1
+​    console.log <strong>tests</strong>\desribe和test块的执行顺序.js:13
+​      describe inner 1-1
+​    console.log <strong>tests</strong>\desribe和test块的执行顺序.js:21
+​      describe outer-b
+​    console.log <strong>tests</strong>\desribe和test块的执行顺序.js:29
+​      describe inner 2
+​    console.log <strong>tests</strong>\desribe和test块的执行顺序.js:36
+​      describe outer-c
+​    console.log <strong>tests</strong>\desribe和test块的执行顺序.js:7
+​      test for describe inner 1
+​    console.log <strong>tests</strong>\desribe和test块的执行顺序.js:15
+​      test for describe inner 1-1
+​    console.log <strong>tests</strong>\desribe和test块的执行顺序.js:24
+​      test for describe outer
+​    console.log <strong>tests</strong>\desribe和test块的执行顺序.js:31
+​      test for describe inner 2</p>
+<h2 id="-">通用建议</h2>
+<p>如果测试失败，第一件要检查的事就是，当仅运行这条测试时，它是否仍然失败。 To run only one test with Jest, temporarily change that <code>test</code> command to a <code>test.only</code>:</p>
+<pre><code>test.only(&#39;this will be the only test that runs&#39;, () =&gt; {
+  expect(true).toBe(false);
+});
+
+test(&#39;this test will not run&#39;, () =&gt; {
+  expect(&#39;A&#39;).toBe(&#39;A&#39;);
+});
+</code></pre><p>如果你有一个测试，当它作为一个更大的用例中的一部分时，经常运行失败，但是当你单独运行它时，并不会失败，所以最好考虑其他测试对这个测试的影响。 通常可以通过修改 <code>beforeEach</code> 来清除一些共享的状态来修复这种问题。 If you&#39;re not sure whether some shared state is being modified, you can also try a <code>beforeEach</code> that logs data.</p>
+<h1 id="mock-functions">Mock Functions</h1>
+<h2 id="-mock-">使用 mock 函数</h2>
+<p>假设我们要测试函数 <code>forEach</code> 的内部实现，这个函数为传入的数组中的每个元素调用一次回调函数。</p>
+<p>为了测试此函数，我们可以使用一个 mock 函数，然后检查 mock 函数的状态来确保回调函数如期调用。</p>
+<pre><code>function forEach(items, callback) {
+  for (let index = 0; index &lt; items.length; index++) {
+    callback(items[index]);
+  }
+}
+const mockCallback = jest.fn(x =&gt; 42 + x);
+forEach([0, 1], mockCallback);
+
+// 此 mock 函数被调用了两次
+expect(mockCallback.mock.calls.length).toBe(2);
+
+// 第一次调用函数时的第一个参数是 0
+expect(mockCallback.mock.calls[0][0]).toBe(0);
+
+// 第二次调用函数时的第一个参数是 1
+expect(mockCallback.mock.calls[1][0]).toBe(1);
+
+// 第一次函数调用的返回值是 42
+expect(mockCallback.mock.results[0].value).toBe(42);
+</code></pre><h2 id="-mock-"><code>.mock</code> 属性</h2>
+<p>所有的 mock 函数都有这个特殊的 <code>.mock</code>属性，它保存了关于此函数如何被调用、调用时的返回值的信息。 <code>.mock</code> 属性还追踪每次调用时 <code>this</code>的值，所以我们同样可以也检视（inspect） <code>this</code>：</p>
+<pre><code>const myMock = jest.fn();
+
+const a = new myMock();
+const b = {};
+const bound = myMock.bind(b);
+bound();
+
+console.log(myMock.mock.instances);
+// &gt; [ &lt;a&gt;, &lt;b&gt; ]
+</code></pre><p>这些 mock 成员变量在测试中非常有用，用于说明这些 function 是如何被调用、实例化或返回的：</p>
+<pre><code>const someMockFunction = jest.fn(function (parameter1, parameter2) {
+    console.log(&#39;parameter1&#39;, parameter1)
+    console.log(&#39;parameter2&#39;, parameter2)
+    this.name = &#39;test&#39;
+    return &#39;return value&#39;
+});
+new someMockFunction(&#39;first arg&#39;, &#39;second arg&#39;);
+test(&#39;the fetch fails with an error&#39;, () =&gt; {
+    // The function was called exactly once 函数只被调用了一次
+    console.log(&#39;someMockFunction.mock.calls.length&#39;, someMockFunction.mock.calls.length)
+    expect(someMockFunction.mock.calls.length).toBe(1);
+
+    // The first arg of the first call to the function was &#39;first arg&#39; 对函数的第一次调用的第一个参数是“first arg”
+    console.log(&#39;someMockFunction.mock.calls[0][0]&#39;, someMockFunction.mock.calls[0][0])
+    expect(someMockFunction.mock.calls[0][0]).toBe(&#39;first arg&#39;);
+
+    // The second arg of the first call to the function was &#39;second arg&#39; 第一次调用函数的第二个参数是&#39;second arg&#39;
+    console.log(&#39;someMockFunction.mock.calls[0][1]&#39;, someMockFunction.mock.calls[0][1])
+    expect(someMockFunction.mock.calls[0][1]).toBe(&#39;second arg&#39;);
+
+    // The return value of the first call to the function was &#39;return value&#39; 对函数的第一次调用的返回值为“return value”
+    console.log(&#39;someMockFunction.mock.results[0].value&#39;, someMockFunction.mock.results[0].value)
+    expect(someMockFunction.mock.results[0].value).toBe(&#39;return value&#39;);
+    //  这个函数被实例化了1次
+    console.log(&#39;someMockFunction.mock.instances.length&#39;, someMockFunction.mock.instances.length)
+    expect(someMockFunction.mock.instances.length).toBe(1);
+
+    //此函数的第一个实例化返回的对象
+    //有一个“name”属性，其值设置为“test”
+    console.log(&#39;someMockFunction.mock.instances[0].name&#39;, someMockFunction.mock.instances[0].name)
+    expect(someMockFunction.mock.instances[0].name).toEqual(&#39;test&#39;);
+})
+
+</code></pre><h2 id="mock-">Mock 的返回值</h2>
+<p>Mock 函数也可以用于在测试期间将测试值注入代码︰</p>
+<pre><code>const myMock = jest.fn();
+console.log(myMock());
+// &gt; undefined
+
+myMock
+  .mockReturnValueOnce(10)
+  .mockReturnValueOnce(&#39;x&#39;)
+  .mockReturnValue(true);
+
+console.log(myMock(), myMock(), myMock(), myMock());
+</code></pre><p>在函数连续传递风格（functional continuation-passing style）的代码中时，Mock 函数也非常有效。 以这种代码风格有助于避免复杂的中间操作，便于直观表现组件的真实意图，这有利于在它们被调用之前，将值直接注入到测试中。</p>
+<pre><code>const filterTestFn = jest.fn();
+
+// Make the mock return `true` for the first call,
+// and `false` for the second call
+filterTestFn.mockReturnValueOnce(true).mockReturnValueOnce(false);
+
+const result = [11, 12].filter(num =&gt; filterTestFn(num));
+
+console.log(result);
+// &gt; [11]
+console.log(filterTestFn.mock.calls);
+// &gt; [ [11], [12] ]
+</code></pre><h2 id="-">模拟模块</h2>
+<p>假定有个从 API 获取用户的类。 该类用 <a href="https://github.com/axios/axios">axios</a> 调用 API 然后返回 <code>data</code>，其中包含所有用户的属性</p>
+<p>现在，为测试该方法而不实际调用 API (使测试缓慢与脆弱)，我们可以用 <code>jest.mock(...)</code> 函数自动模拟 axios 模块。</p>
+<p>一旦模拟模块，我们可为 <code>.get</code> 提供一个 <code>mockResolvedValue</code> ，它会返回假数据用于测试。 实际上，我们想让 axios.get(&#39;/users.json&#39;) 有个假的 response。</p>
+<pre><code>import axios from &#39;axios&#39;;
+
+class Users {
+    static all() {
+      return axios.get(&#39;https://api.apiopen.top/musicDetails&#39;).then(resp =&gt; resp.data);
+    }
+  }
+
+jest.mock(&#39;axios&#39;);
+test(&#39;should fetch users&#39;, () =&gt; {
+  const users = [{name: &#39;Bob&#39;}];
+  const resp = {data: users};
+  // 其实这里压根并没有发送ajax请求
+  axios.get.mockResolvedValue(resp);
+  // or you could use the following depending on your use case:
+  // axios.get.mockImplementation(() =&gt; Promise.resolve(resp))
+  return Users.all().then(data =&gt; {
+      // 这里获取到的数据则是请求时候的数据，只是为了做请求参数校验而已
+      console.log(&#39;data==&#39;,data)
+    expect(data).toEqual(users)
+  });
+});
+</code></pre><h1 id="jest-platform">Jest Platform</h1>
+<h2 id="jest-get-type">jest-get-type</h2>
+<p>js 数据类型获取</p>
+<pre><code>const getType = require(&#39;jest-get-type&#39;);
+
+const array = [1, 2, 3];
+const nullValue = null;
+const undefinedValue = undefined;
+
+// prints &#39;array&#39;
+console.log(getType(array));
+// prints &#39;null&#39;
+console.log(getType(nullValue));
+// prints &#39;undefined&#39;
+console.log(getType(undefinedValue));
+</code></pre><h2 id="jest-validate">jest-validate</h2>
+<p>用于验证用户提交的配置的工具。导出接受两个参数的函数：用户配置和包含示例配置和其他选项的对象。返回值是具有两个属性的对象：</p>
+<ul>
+<li><code>hasDeprecationWarnings</code>, 一个布尔值，指示提交的配置是否有弃用警告，</li>
+<li><code>isValid</code>, 一个布尔值, 指示配置是否正确。</li>
+</ul>
+<pre><code>const {validate} = require(&#39;jest-validate&#39;);
+
+const configByUser = {
+  transform: &#39;&lt;rootDir&gt;/node_modules/my-custom-transform&#39;,
+};
+
+const result = validate(configByUser, {
+  comment: &#39;  Documentation: http://custom-docs.com&#39;,
+  exampleConfig: {transform: &#39;&lt;rootDir&gt;/node_modules/babel-jest&#39;},
+});
+
+console.log(result);
+</code></pre><h2 id="pretty-format">pretty-format</h2>
+<p>导出将任何JavaScript值转换为<strong>可读字符串</strong>的函数。支持所有现成的内置JavaScript类型，并允许通过用户定义的插件扩展特定于应用程序的类型。</p>
+<pre><code>const prettyFormat = require(&#39;pretty-format&#39;);
+test(&#39;should fetch users&#39;, () =&gt; {
+    const val = { object: {} };
+    val.circularReference = val;
+    val[Symbol(&#39;foo&#39;)] = &#39;foo&#39;;
+    val.map = new Map([[&#39;prop&#39;, &#39;value&#39;]]);
+    val.array = [-0, Infinity, NaN];
+    console.log(&#39;pretty-format&#39;);
+    console.log(val);
+    console.log(prettyFormat(val));
+})
+</code></pre><h1 id="snapshot-testing">Snapshot Testing</h1>
+<p>快照测试是为了防止文件被就修改了，但是不知道修改哪里，所以快照测试就是对比了上次和本次修改的差异，并且会发除报错警告，如果需要修改则需要删掉测试用例的快照文件就会覆盖掉上次的快照测试。</p>
+<h2 id="snapshot-testing-with-jest">Snapshot Testing with Jest</h2>
+<h3 id="-">配置文件快照测试</h3>
+<p>项目中经常有一些配置文件。比如</p>
+<pre><code>// snapshot.js
+export const generateConfig  = () =&gt; {
+    return {
+        server: &#39;http://localhost&#39;,
+        port: &#39;8080&#39;
+    }
+}
+</code></pre><p>那测试它的普通测试用例可以这样写</p>
+<pre><code>import { generateConfig } from &#39;./snapshot.js&#39;
+
+test(&#39;测试 generateConfig&#39;, () =&gt; {
+    expect(generateConfig()).toEqual({
+        server: &#39;http://localhost&#39;,
+        port: &#39;8080&#39;
+    })
+})
+</code></pre><p>当配置项不断增加的时候，就需要不断去更改测试用例。</p>
+<p>那么我们可以这样写快照测试用例：</p>
+<pre><code>
+import { generateConfig } from &#39;./snapshot.js&#39;
+
+test(&#39;测试 generateConfig&#39;, () =&gt; {
+    expect(generateConfig()).toMatchSnapshot()
+})
+</code></pre><p>这个时候如果运行了测试用例就会在<strong><strong>tests</strong></strong> 文件夹中生成一个文件夹<strong>snapshots</strong> 改文件夹就是存放测试用例快照的，如果上面的文件snapshot.js 配置被修改了之后，在运行测试用例就会报错，然后和快照对比不一致就会报错，需要解决就是把上一份的快照删除即可。</p>
+<h3 id="-">组件快照测试</h3>
+<p>组件测试只有在react环境中才能测试，最好在create-react-app教授架中执行</p>
+<p>每当你想要确保你的UI不会有意外的改变，快照测试是非常有用的工具。</p>
+<p>在测试React组件时也可以采用类似的方法。您可以使用测试呈现器快速生成React树的可序列化值，而不是呈现需要构建整个应用程序的图形UI。考虑以下链接组件的示例测试：</p>
+<pre><code>import React from &#39;react&#39;;
+import renderer from &#39;react-test-renderer&#39;;
+
+const Link = (props)=&gt; (
+  &lt;a href={props.page}&gt;
+     {props.children}
+  &lt;/a&gt;
+);
+it(&#39;renders correctly&#39;, () =&gt; {
+    console.log(&#39;Link&#39;)
+  const tree = renderer
+    .create(&lt;Link page=&quot;http://www.facebook.com/def&quot;&gt;Facebook&lt;/Link&gt;)
+    .toJSON();
+  expect(tree).toMatchSnapshot();
+});
+</code></pre><p>首次运行此测试时，Jest会创建一个快照文件，如下所示：</p>
+<pre><code>// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`renders correctly 1`] = `
+&lt;a
+  href=&quot;http://www.facebook.com/def&quot;
+&gt;
+  Facebook
+&lt;/a&gt;
+`;
+
+</code></pre><p>由于我们刚刚更新了组件以指向不同的地址，因此可以合理地预期此组件的快照会发生更改。快照测试用例失败，因为更新组件的快照不再与此测试用例的快照项目匹配。</p>
+<p>要解决这个问题，我们需要更新快照工件。您可以使用一个标志运行Jest，该标志将告诉它重新生成快照：</p>
+<pre><code>jest --updateSnapshot
+</code></pre><p>当然也可以删除快照文件夹中的文件</p>
+<h2 id="-">属性匹配器</h2>
+<p>通常，对象中会有要快照的字段（如ID和日期）。如果尝试对这些对象进行快照，它们将在每次运行时强制快照失败：</p>
+<pre><code>it(&#39;will fail every time&#39;, () =&gt; {
+  const user = {
+    createdAt: new Date(),
+    id: Math.floor(Math.random() * 20),
+    name: &#39;LeBron James&#39;,
+  };
+
+  expect(user).toMatchSnapshot();
+});
+</code></pre><p>生成快照</p>
+<pre><code>// Snapshot
+exports[`will fail every time 1`] = `
+Object {
+  &quot;createdAt&quot;: 2018-05-19T23:36:09.816Z,
+  &quot;id&quot;: 3,
+  &quot;name&quot;: &quot;LeBron James&quot;,
+}
+`;
+</code></pre><p>因为这个date时间是每次生成都不同的，所以会导致第二次快照都会失败</p>
+<p>对于这些情况，Jest允许为任何属性提供非对称匹配器。在写入或测试快照之前检查这些匹配项，然后将其保存到快照文件中，而不是保存到接收到的值：</p>
+<pre><code>it(&#39;will check the matchers and pass&#39;, () =&gt; {
+  const user = {
+    createdAt: new Date(),
+    id: Math.floor(Math.random() * 20),
+    name: &#39;LeBron James&#39;,
+  };
+
+  expect(user).toMatchSnapshot({
+    createdAt: expect.any(Date),
+    id: expect.any(Number),
+  });
+});
+</code></pre><p>生成快照</p>
+<pre><code>// Snapshot
+exports[`will check the matchers and pass 1`] = `
+Object {
+  &quot;createdAt&quot;: Any&lt;Date&gt;,
+  &quot;id&quot;: Any&lt;Number&gt;,
+  &quot;name&quot;: &quot;LeBron James&quot;,
+}
+`;
+</code></pre><p>任何不是匹配器的给定值都将被完全检查并保存到快照中</p>
+<h3 id="-">将快照视为代码</h3>
+<p>提交快照并将其作为常规代码检查过程的一部分进行检查。这意味着您像对待项目中任何其他类型的测试或代码一样对待快照。</p>
+<p>确保快照集中，简短并使用强制执行这些样式约定的工具，以确保快照可读。</p>
+<p>如前所述，Jest <a href="https://yarnpkg.com/en/package/pretty-format"><code>pretty-format</code></a>用来使快照易于理解，但是您可能会发现引入其他工具（如<a href="https://yarnpkg.com/en/package/eslint-plugin-jest"><code>eslint-plugin-jest</code></a>带有其<a href="https://github.com/jest-community/eslint-plugin-jest/blob/master/docs/rules/no-large-snapshots.md"><code>no-large-snapshots</code></a>选项或<a href="https://yarnpkg.com/en/package/snapshot-diff"><code>snapshot-diff</code></a>组件快照比较功能）以促进提交简短而集中的断言很有用。</p>
+<p>目的是使其易于查看拉取请求中的快照，并与在测试套件失败时避免重新生成快照的习惯相反，而不是检查其失败的根本原因。</p>
+<h3 id="-">快照测试和视觉回归测试有什么区别？</h3>
+<p>快照测试和视觉回归测试是测试UI的两种不同方法，它们具有不同的用途。视觉回归测试工具获取网页的屏幕截图，并逐像素比较生成的图像。使用Snapshot，测试值可以序列化，存储在文本文件中，并使用diff算法进行比较。有许多折衷考虑，我们在<a href="https://jestjs.io/blog/2016/07/27/jest-14.html#why-snapshot-testing">Jest博客中</a>列出了构建快照测试的原因。</p>
+<h3 id="-ci-">快照是否自动写在持续集成（CI）系统上？</h3>
+<p>不可以，从Jest 20开始，如果Jest在CI系统中运行而未显式传递，则不会自动写入Jest中的快照<code>--updateSnapshot</code>。预计所有快照都是在CI上运行的代码的一部分，并且由于新快照会自动通过，因此它们不应通过在CI系统上运行的测试。建议始终提交所有快照并将其保留在版本控制中。</p>
+<h1 id="timer-mocks">Timer Mocks</h1>
+<p>原生的定时器函数(如：<code>setTimeout</code>, <code>setInterval</code>, <code>clearTimeout</code>, <code>clearInterval</code>)并不是很方便测试，因为程序需要等待相应的延时。 Jest can swap out timers with functions that allow you to control the passage of time. <a href="https://www.youtube.com/watch?v=QZoJ2Pt27BY">Great Scott!</a></p>
+<pre><code>function timerGame(callback) {
+    console.log(&#39;Ready....go!&#39;);
+    setTimeout(() =&gt; {
+        console.log(&quot;Time&#39;s up -- stop!&quot;);
+        callback &amp;&amp; callback();
+    }, 1000);
+}
+
+
+jest.useFakeTimers();
+
+test(&#39;1秒钟后调用回调callback&#39;, () =&gt; {
+  const callback = jest.fn();
+
+  timerGame(callback);
+
+  // 在这个时间点上，callback回调函数还没有被调用
+  expect(callback).not.toBeCalled();
+
+  // 所有timers被执行
+  jest.runAllTimers();
+
+  // 现在我们的callback回调函数被调用
+  expect(callback).toBeCalled();
+  expect(callback).toHaveBeenCalledTimes(1);
+});
+</code></pre><h2 id="run-all-timers">Run All Timers</h2>
+<p>对于这个模块我们还需要写一个测试，用于判断回调函数是否在1秒后被调用的。 为此，我们将使用Jest的定时器控制API，用于在测试中将时间“快进”到正确的时间点。</p>
+<pre><code>function timerGame(callback) {
+    console.log(&#39;Ready....go!&#39;);
+    setTimeout(() =&gt; {
+        console.log(&quot;Time&#39;s up -- stop!&quot;);
+        callback &amp;&amp; callback();
+    }, 1000);
+}
+
+
+jest.useFakeTimers();
+
+test(&#39;1秒钟后调用回调callback&#39;, () =&gt; {
+  const callback = jest.fn();
+
+  timerGame(callback);
+
+  // 在这个时间点上，callback回调函数还没有被调用
+  expect(callback).not.toBeCalled();
+
+  // 所有timers被执行
+  jest.runAllTimers();
+
+  // 现在我们的callback回调函数被调用
+  expect(callback).toBeCalled();
+  expect(callback).toHaveBeenCalledTimes(1);
+});
+</code></pre><h2 id="run-pending-timers">Run Pending Timers</h2>
+<p>在某些场景下你可能还需要“循环定时器”——在定时器的callback函数中再次设置一个新定时器。 对于这种情况，如果将定时器一直运行下去那将陷入死循环，所以在此场景下不应该使用<code>jest.runAllTimers()</code> For these cases you might use <code>jest.runOnlyPendingTimers()</code>:</p>
+<pre><code>function infiniteTimerGame(callback) {
+    console.log(&#39;Ready....go!&#39;);
+
+    setTimeout(() =&gt; {
+      console.log(&quot;Time&#39;s up! 10 seconds before the next game starts...&quot;);
+      callback &amp;&amp; callback();
+
+      // Schedule the next game in 10 seconds
+      setTimeout(() =&gt; {
+        infiniteTimerGame(callback);
+      }, 10000);
+    }, 1000);
+  }
+
+  jest.useFakeTimers();
+
+describe(&#39;infiniteTimerGame&#39;, () =&gt; {
+  test(&#39;schedules a 10-second timer after 1 second&#39;, () =&gt; {
+
+    const callback = jest.fn();
+
+    infiniteTimerGame(callback);
+
+    // At this point in time, there should have been a single call to
+    // setTimeout to schedule the end of the game in 1 second.
+     // 在这里，会在1秒钟后执行callback的回调
+    expect(setTimeout).toHaveBeenCalledTimes(1);
+    expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 1000);
+
+    // Fast forward and exhaust only currently pending timers
+    // (but not any new timers that get created during that process)
+    //快进和排气仅限当前挂起的计时器
+    //（但在此过程中不会创建任何新计时器）
+    jest.runOnlyPendingTimers();
+
+    // At this point, our 1-second timer should have fired it&#39;s callback
+      // 只有当前待定的计时器（但不是在该过程中创建的任何新计时器）
+    expect(callback).toBeCalled();
+
+    // And it should have created a new timer to start the game over in
+    // 10 seconds
+    // 它应该创建一个新的计时器，以便在10秒内启动游戏
+    expect(setTimeout).toHaveBeenCalledTimes(2);
+    expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 10000);
+  });
+});
+</code></pre><h2 id="-advance-timers-by-time-"><strong>按时间提前计时器(Advance Timers by Time)</strong></h2>
+<p>另一种可能性是使用jest.advanceTimersByTime（msToRun）。
+ 调用此API时，所有计时器都按msToRun毫秒提前。
+ 将执行已经通过setTimeout()或setInterval()排队并且将在此时间帧期间执行所有待处理&quot;宏任务&quot;。
+ 此外，如果这些宏任务调度将在同一时间帧内执行的新宏任务，那么将执行这些宏任务，直到队列中不再有宏任务应该在msToRun毫秒内运行。
+ 示例如下</p>
+<pre><code>function timerGame(callback) {
+    console.log(&#39;Ready....go!&#39;);
+    setTimeout(() =&gt; {
+        console.log(&quot;Time&#39;s up -- stop!&quot;);
+        callback &amp;&amp; callback();
+    }, 1000);
+}
+jest.useFakeTimers();
+it(&#39;calls the callback after 1 second via advanceTimersByTime&#39;, () =&gt; {
+    // const timerGame = require(&#39;../timerGame&#39;);
+    const callback = jest.fn();
+
+    timerGame(callback);
+
+    // 在这个时间点，回调函数不应该被执行
+    expect(callback).not.toBeCalled();
+
+    // “快进”时间，使得所有定时器回调都被执行
+    jest.advanceTimersByTime(1000);
+
+    // 到这里，所有的定时器回调都应该被执行了！
+    expect(callback).toBeCalled();
+    expect(callback).toHaveBeenCalledTimes(1);
+});
+</code></pre><h1 id="es6-class-mocks-es6-">Es6  Class Mocks(使用ES6语法类的模拟)</h1>
+<p>Jest可用于模拟导入到要测试的文件中的ES6类。</p>
+<p>ES6类是带有一些语法糖的构造函数。因此，ES6类的任何模拟都必须是一个函数或实际的ES6类（再次是另一个函数）。因此，您可以使用<a href="https://jestjs.io/docs/zh-Hans/mock-functions">模拟函数</a>模拟它们。</p>
+<h2 id="es6-">ES6类示例</h2>
+<p>我们将使用一个构造示例，该示例播放声音文件的类<code>SoundPlayer</code>，以及使用该类的使用者类<code>SoundPlayerConsumer</code>。我们将<code>SoundPlayer</code>针对进行测试<code>SoundPlayerConsumer</code>。</p>
+<pre><code>// sound-player.js
+export default class SoundPlayer {
+  constructor() {
+    this.foo = &#39;bar&#39;;
+  }
+
+  playSoundFile(fileName) {
+    console.log(&#39;Playing sound file &#39; + fileName);
+  }
+}
+</code></pre><pre><code>// sound-player-consumer.js
+import SoundPlayer from &#39;./sound-player&#39;;
+
+export default class SoundPlayerConsumer {
+  constructor() {
+    this.soundPlayer = new SoundPlayer();
+  }
+
+  playSomethingCool() {
+    const coolSoundFileName = &#39;song.mp3&#39;;
+    this.soundPlayer.playSoundFile(coolSoundFileName);
+  }
+}
+</code></pre><h1 id="-es6-"><strong>一个ES6语法类的实例</strong></h1>
+<h3 id="-">自动模拟</h3>
+<p>调用会<code>jest.mock(&#39;./sound-player&#39;)</code>返回一个有用的“自动模拟”，您可以用来监视对类构造函数及其所有方法的调用。它将ES6类替换为模拟构造函数，并将其所有方法替换为始终返回的<a href="https://jestjs.io/docs/zh-Hans/mock-functions">模拟函数</a><code>undefined</code>。方法调用保存在中<code>theAutomaticMock.mock.instances[index].methodName.mock.calls</code>。</p>
+<p>请注意，如果您在类中使用箭头函数，则它们<em>不会</em>成为模拟的一部分。这样做的原因是，箭头函数不存在于对象的原型中，它们只是持有对该函数的引用的属性。</p>
+<p>如果您不需要替换类的实现，则这是最简单的设置方法。例如：</p>
+<pre><code>import SoundPlayer from &#39;../sound-player&#39;;
+import SoundPlayerConsumer from &#39;../sound-player-consumer&#39;;
+// SoundPlayer is now a mock constructor 
+//SoundPlayer现在是一个模拟构造函数 
+jest.mock(&#39;../sound-player&#39;); 
+
+
+beforeEach(() =&gt; {
+  // Clear all instances and calls to constructor and all methods:
+  //清除对构造函数和所有方法的所有实例和调用：
+  SoundPlayer.mockClear();
+});
+
+it(&#39;我们可以检查SoundPlayerConsumer是否调用了类构造函数&#39;, () =&gt; {
+  const soundPlayerConsumer = new SoundPlayerConsumer();
+  expect(SoundPlayer).toHaveBeenCalledTimes(1);
+});
+
+it(&#39;We can check if the consumer called a method on the class instance&#39;, () =&gt; {
+  // Show that mockClear() is working:
+  //显示mockClear（）正在工作：
+
+  expect(SoundPlayer).not.toHaveBeenCalled();
+
+  const soundPlayerConsumer = new SoundPlayerConsumer();
+  // Constructor should have been called again:
+    //应再次调用构造函数：
+  expect(SoundPlayer).toHaveBeenCalledTimes(1);
+
+  const coolSoundFileName = &#39;song.mp3&#39;;
+  soundPlayerConsumer.playSomethingCool();
+
+  // mock.instances is available with automatic mocks:
+  //mock.instances可用于自动模拟：
+  const mockSoundPlayerInstance = SoundPlayer.mock.instances[0];
+  const mockPlaySoundFile = mockSoundPlayerInstance.playSoundFile;
+  expect(mockPlaySoundFile.mock.calls[0][0]).toEqual(coolSoundFileName);
+  // Equivalent to above check:
+  //等同于上述检查：
+  // expect(mockPlaySoundFile).toHaveBeenCalledWith(coolSoundFileName);
+  // expect(mockPlaySoundFile).toHaveBeenCalledTimes(1);
+});
+</code></pre><h3 id="-">手动模拟</h3>
+<p>通过将模拟实现保存在文件夹中来创建<a href="https://jestjs.io/docs/zh-Hans/manual-mocks">手动模拟</a><code>__mocks__</code>。这使您可以指定实现，并且可以在测试文件中使用它。</p>
+<p>导入所有实例共享的模拟和模拟方法：</p>
+<pre><code>// __mocks__/sound-player.js
+
+// Import this named export into your test file:
+export const mockPlaySoundFile = jest.fn();
+const mock = jest.fn().mockImplementation(() =&gt; {
+  return {playSoundFile: mockPlaySoundFile};
+});
+
+export default mock;
+</code></pre><p>导入所有实例共享的模拟和模拟方法：</p>
+<pre><code>// sound-player-consumer.test.js
+import SoundPlayer, {mockPlaySoundFile} from &#39;../sound-player&#39;;
+// 这里一定要这个中间件对象去测试
+import SoundPlayerConsumer from &#39;../sound-player-consumer&#39;;
+jest.mock(&#39;../sound-player&#39;); // SoundPlayer is now a mock constructor SoundPlayer现在是一个模拟构造函数
+
+beforeEach(() =&gt; {
+  // Clear all instances and calls to constructor and all methods:
+  //清除对构造函数和所有方法的所有实例和调用：
+  SoundPlayer.mockClear(); // 对象 
+  mockPlaySoundFile.mockClear(); // 方法
+});
+
+//我们可以检查使用者是否调用了类构造函数
+it(&#39;We can check if the consumer called the class constructor&#39;, () =&gt; {
+   const soundPlayerConsumer = new SoundPlayerConsumer();
+  expect(SoundPlayer).toHaveBeenCalledTimes(1);
+});
+
+//我们可以检查使用者是否调用了类实例上的方法
+it(&#39;We can check if the consumer called a method on the class instance&#39;, () =&gt; {
+  const soundPlayerConsumer = new SoundPlayerConsumer();
+  const coolSoundFileName = &#39;song.mp3&#39;;
+
+  /*
+    这里两句代码相当于 这一句代码 soundPlayerConsumer.playSomethingCool(coolSoundFileName);
+    然后在调用 SoundPlayer.playSoundFile 中的方法
+  */
+  soundPlayerConsumer.playSomethingCool();
+  expect(mockPlaySoundFile).toHaveBeenCalledWith(coolSoundFileName);
+
+});
+</code></pre><h3 id="jest-mock-"><a href="https://jestjs.io/docs/zh-Hans/jest-object#jestmockmodulename-factory-options"><code>jest.mock()</code></a>用模块工厂参数调用</h3>
+<p><code>jest.mock(path, moduleFactory)</code>接受<strong>模块工厂</strong>参数。模块工厂是一个返回模拟的函数。</p>
+<p>为了模拟构造函数，模块工厂必须返回构造函数。换句话说，模块工厂必须是返回函数的函数-高阶函数（HOF）。</p>
+<pre><code>// 
+import SoundPlayer from &#39;../sound-player&#39;;
+import SoundPlayerConsumer from &#39;../sound-player-consumer&#39;;
+
+jest.mock(&#39;../sound-player&#39;); // SoundPlayer 现在是一个模拟构造函数
+const mockPlaySoundFile = jest.fn();
+jest.mock(&#39;../sound-player&#39;, () =&gt; {
+  return jest.fn().mockImplementation(() =&gt; {
+    return {playSoundFile: mockPlaySoundFile};
+  });
+}); 
+
+
+beforeEach(() =&gt; {
+  // 清除所有实例并调用构造函数和所有方法：
+  SoundPlayer.mockClear();
+  mockPlaySoundFile.mockClear();
+});
+
+it(&#39;我们可以检查SoundPlayerConsumer是否调用了类构造函数&#39;, () =&gt; {
+  //调用sound-player 实例化类 
+  const soundPlayerConsumer = new SoundPlayerConsumer();
+  expect(SoundPlayer).toHaveBeenCalledTimes(1);
+});
+
+it(&#39;我们可以检查SoundPlayerConsumer是否在类实例上调用了一个方法&#39;, () =&gt; {
+  const soundPlayerConsumer = new SoundPlayerConsumer();
+  const coolSoundFileName = &#39;song.mp3&#39;;
+  // 调用sound-player 类中的 playSoundFile 方法
+  soundPlayerConsumer.playSomethingCool();
+  expect(mockPlaySoundFile).toHaveBeenCalledWith(coolSoundFileName);
+});
+</code></pre><h3 id="-mockimplementation-mockimplementationonce-">使用<a href="https://jestjs.io/docs/zh-Hans/mock-function-api#mockfnmockimplementationfn"><code>mockImplementation()</code></a>或替换模拟<a href="https://jestjs.io/docs/zh-Hans/mock-function-api#mockfnmockimplementationoncefn"><code>mockImplementationOnce()</code></a></h3>
+<p>您可以通过调用<code>mockImplementation()</code>现有的模拟来替换所有上述模拟，以更改单个测试或所有测试的实现。</p>
+<p>对jest.mock的调用被提升到代码的顶部。您可以稍后指定一个模拟，例如在中<code>beforeAll()</code>，通过在现有模拟上调用<code>mockImplementation()</code>（或<code>mockImplementationOnce()</code>）而不使用factory参数。如果需要，这还允许您在测试之间更改模拟：</p>
+<pre><code>// mockImplementation.test.js
+import SoundPlayer from &#39;../sound-player&#39;;
+import SoundPlayerConsumer from &#39;../sound-player-consumer&#39;;
+
+jest.mock(&#39;../sound-player&#39;);
+
+describe(&#39;When SoundPlayer throws an error&#39;, () =&gt; {
+  beforeAll(() =&gt; {
+    SoundPlayer.mockImplementation(() =&gt; {
+      return {
+        playSoundFile: () =&gt; {
+          throw new Error(&#39;Test error&#39;);
+        },
+      };
+    });
+  });
+
+  it(&#39;Should throw an error when calling playSomethingCool&#39;, () =&gt; {
+    const soundPlayerConsumer = new SoundPlayerConsumer();
+    // 特定跑出一个错误
+    expect(() =&gt; soundPlayerConsumer.playSomethingCool()).toThrow();
+  });
+});
+</code></pre><h2 id="-">深入：了解模拟构造函数</h2>
+<p>使用构建构造函数模拟<code>jest.fn().mockImplementation()</code>使模拟看起来比实际复杂。本节说明如何创建自己的模拟，以说明模拟的工作方式。</p>
+<h3 id="-es6-">手动模拟是另一个ES6类</h3>
+<p>如果使用与文件<code>__mocks__</code>夹中模拟类相同的文件名定义ES6类，它将用作模拟。该类将代替实际的类。这使您可以为该类注入测试实现，但不能提供监视调用的方法。</p>
+<p>对于人为的示例，模拟可能如下所示：</p>
+<pre><code>// __mocks__/sound-player.js
+export default class SoundPlayer {
+  constructor() {
+    console.log(&#39;Mock SoundPlayer: constructor was called&#39;);
+  }
+
+  playSoundFile() {
+    console.log(&#39;Mock SoundPlayer: playSoundFile was called&#39;);
+  }
+}
+</code></pre><h1 id="-">绕过模块模拟</h1>
+<p>st允许您模拟测试中的整个模块，这对于测试代码是否正确地从该模块调用函数很有用。但是，有时您可能想在<em>测试文件中</em>使用模拟模块的一部分，在这种情况下，您要访问原始实现，而不是模拟版本。</p>
+<p>考虑为此<code>createUser</code>功能编写一个测试用例：</p>
+<pre><code>// createUser.js
+import fetch from &#39;node-fetch&#39;;
+
+export const createUser = async () =&gt; {
+  const response = await fetch(&#39;http://website.com/users&#39;, {method: &#39;POST&#39;});
+  const userId = await response.text();
+  return userId;
+};
+</code></pre><p>您的测试将要模拟该<code>fetch</code>函数，以便我们可以确保在不实际发出网络请求的情况下调用该函数。但是，你也需要模拟的返回值<code>fetch</code>与<code>Response</code>（包裹在一个<code>Promise</code>），作为我们的函数使用它来抓取所创建的用户的ID。因此，您最初可能会尝试编写如下测试：</p>
+<pre><code>jest.mock(&#39;node-fetch&#39;);
+
+import fetch, {Response} from &#39;node-fetch&#39;;
+
+import {createUser} from &#39;./createUser&#39;;
+
+test(&#39;createUser calls fetch with the right args and returns the user id&#39;, async () =&gt; {
+  fetch.mockReturnValue(Promise.resolve(new Response(&#39;4&#39;)));
+
+  const userId = await createUser();
+
+  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(fetch).toHaveBeenCalledWith(&#39;http://website.com/users&#39;, {
+    method: &#39;POST&#39;,
+  });
+  expect(userId).toBe(&#39;4&#39;);
+});
+</code></pre><p>但是，如果运行该测试，则会发现该<code>createUser</code>函数将失败，并抛出错误：<code>TypeError: response.text is not a function</code>。这是因为<code>Response</code>您导入的类<code>node-fetch</code>已被模拟（由于<code>jest.mock</code>测试文件顶部的调用），因此它不再表现出应有的方式。</p>
+<p>为了解决这样的问题，Jest提供了<code>jest.requireActual</code>帮助程序。要使上述测试生效，请对测试文件中的导入进行以下更改：</p>
+<pre><code>// createUser.js
+jest.mock(&#39;node-fetch&#39;);
+
+// import fetch, {Response} from &#39;node-fetch&#39;;
+import fetch from &#39;node-fetch&#39;;
+const {Response} = jest.requireActual(&#39;node-fetch&#39;);
+
+import {createUser} from &#39;../createUser&#39;;
+
+//createUser使用正确的args调用fetch并返回用户id
+test(&#39;createUser calls fetch with the right args and returns the user id&#39;, async () =&gt; {
+  // 和远程数据无关，这里输入4 返回结果就是4
+  fetch.mockReturnValue(Promise.resolve(new Response(&#39;4&#39;)));
+
+  const userId = await createUser();
+
+  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(fetch).toHaveBeenCalledWith(&#39;http://website.com/users&#39;, {
+    method: &#39;POST&#39;,
+  });
+  expect(userId).toBe(&#39;4&#39;);
+});
+</code></pre><p>这使您的测试文件可以从而不是模拟版本导入实际<code>Response</code>对象<code>node-fetch</code>。这意味着测试现在将正确通过。</p>
+<h1 id="-webpack-">与webpack一起使用</h1>
+<p>可以用于使用<a href="https://webpack.js.org/">的WebPack</a>来管理资源，样式和编译的项目中。的WebPack <em>确实</em>相比超过其他类似工具来说，展示出一些特有的优势，因为它直接与你的应用程序整合，允许管理资源文件，如图像和字体，并带有可以将系统编译为JavaScript语言和工具。</p>
+<h2 id="webpack-">Webpack样本</h2>
+<p>我们通过以下常见的webpack配置文件，将其转化为符合Jest使用的配置。</p>
+<pre><code>// webpack.config.js
+module.exports = {
+  module: {
+    loaders: [
+      {exclude: [&#39;node_modules&#39;], loader: &#39;babel&#39;, test: /\.jsx?$/},
+      {loader: &#39;style-loader!css-loader&#39;, test: /\.css$/},
+      {loader: &#39;url-loader&#39;, test: /\.gif$/},
+      {loader: &#39;file-loader&#39;, test: /\.(ttf|eot|svg)$/},
+    ],
+  },
+  resolve: {
+    alias: {
+      config$: &#39;./configs/app-config.js&#39;,
+      react: &#39;./vendor/react-master&#39;,
+    },
+    extensions: [&#39;&#39;, &#39;js&#39;, &#39;jsx&#39;],
+    modules: [
+      &#39;node_modules&#39;,
+      &#39;bower_components&#39;,
+      &#39;shared&#39;,
+      &#39;/shared/vendor/modules&#39;,
+    ],
+  },
+};
+</code></pre><p>如果您有由Babel转换的JavaScript文件，则可以通过安装插件来<a href="https://jestjs.io/docs/zh-Hans/getting-started#using-babel">启用对Babel</a>的<a href="https://jestjs.io/docs/zh-Hans/getting-started#using-babel">支持</a><code>babel-jest</code>。可以使用Jest的<a href="https://jestjs.io/docs/zh-Hans/configuration#transform-objectstring-pathtotransformer--pathtotransformer-object"><code>transform</code></a>config选项处理非Babel JavaScript转换。</p>
+<h3 id="-">处理静态文件</h3>
+<p>接下来，让我们配置Jest，转换优雅地处理资源文件，如样式表和图像。通常，这些文件在测试中无足轻重，因为我们可以安全地mock他们。是给你的类名寻找模拟一个代理。</p>
+<pre><code>// package.json
+{
+  &quot;jest&quot;: {
+    &quot;moduleNameMapper&quot;: {
+      &quot;\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$&quot;: &quot;&lt;rootDir&gt;/__mocks__/fileMock.js&quot;,
+      &quot;\\.(css|less)$&quot;: &quot;&lt;rootDir&gt;/__mocks__/styleMock.js&quot;
+    }
+  }
+}
+</code></pre><p>所有模拟文件本身：</p>
+<pre><code>// __mocks__/styleMock.js
+
+module.exports = {};
+</code></pre><pre><code>// __mocks__/fileMock.js
+
+module.exports = &#39;test-file-stub&#39;;
+</code></pre><h3 id="-css-">模拟CSS模块</h3>
+<p>您可以使用<a href="https://github.com/keyanzhang/identity-obj-proxy">ES6 Proxy</a>来模拟一个<a href="https://github.com/css-modules/css-modules">CSS</a>：</p>
+<pre><code>yarn add --dev identity-obj-proxy
+</code></pre><p>然后在样式对象上，你的所有类别名称查找都会原样返回（如<code>styles.foobar === &#39;foobar&#39;</code>）这对React的<a href="https://jestjs.io/docs/zh-Hans/snapshot-testing">Snapshot Testing</a>是相当方便的。</p>
+<pre><code>// package.json (for CSS Modules)
+{
+  &quot;jest&quot;: {
+    &quot;moduleNameMapper&quot;: {
+      &quot;\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$&quot;: &quot;&lt;rootDir&gt;/__mocks__/fileMock.js&quot;,
+      &quot;\\.(css|less)$&quot;: &quot;identity-obj-proxy&quot;
+    }
+  }
+}
+</code></pre><p>请注意，默认情况下在节点6中启用了代理。如果尚未位于节点6上，请确保使用调用Jest <code>node --harmony_proxies node_modules/.bin/jest</code>。</p>
+<p>如果<code>moduleNameMapper</code>不能满足您的要求，则可以使用Jest的<a href="https://jestjs.io/docs/zh-Hans/configuration#transform-objectstring-pathtotransformer--pathtotransformer-object"><code>transform</code></a>config选项指定如何转换资产。例如，返回文件基本名的转换器（例如<code>require(&#39;logo.jpg&#39;);</code>return <code>&#39;logo&#39;</code>）可以写成：</p>
+<pre><code>// fileTransformer.js
+const path = require(&#39;path&#39;);
+
+module.exports = {
+  process(src, filename, config, options) {
+    return &#39;module.exports = &#39; + JSON.stringify(path.basename(filename)) + &#39;;&#39;;
+  },
+};
+</code></pre><pre><code>// package.json (for custom transformers and CSS Modules)
+{
+  &quot;jest&quot;: {
+    &quot;moduleNameMapper&quot;: {
+      &quot;\\.(css|less)$&quot;: &quot;identity-obj-proxy&quot;
+    },
+    &quot;transform&quot;: {
+      &quot;\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$&quot;: &quot;&lt;rootDir&gt;/fileTransformer.js&quot;
+    }
+  }
+}
+</code></pre><p>我们已经知道Jest忽略相关匹配的样式表或图像文件，相反，导入我们的模拟文件。</p>
+<p><em>注：如果您bael-jest和额外的代码预编译器，您必须明确的定义babel-jest为您的Js代码的转换器，并且您需要映射所有.js文件到babel-jest模块。</em></p>
+<pre><code>&quot;transform&quot;: {
+  &quot;^.+\\.js$&quot;: &quot;babel-jest&quot;,
+  &quot;^.+\\.css$&quot;: &quot;custom-transformer&quot;,
+  ...
+}
+</code></pre><h3 id="-jest-">配置Jest来搜寻文件</h3>
+<p>现在玩笑知道如何处理我们的文件了，我们接下来需要告诉它如何<em>找到</em>它们。的WebPack的<code>modulesDirectories</code>，状语从句：<code>extensions</code>选项对话都是状语从句：玩笑的<code>moduleDirectories</code>状语从句：<code>moduleFileExtensions</code>选项对话类似的。</p>
+<pre><code>// package.json
+{
+  &quot;jest&quot;: {
+    &quot;moduleFileExtensions&quot;: [&quot;js&quot;, &quot;jsx&quot;],
+    &quot;moduleDirectories&quot;: [&quot;node_modules&quot;, &quot;bower_components&quot;, &quot;shared&quot;],
+
+    &quot;moduleNameMapper&quot;: {
+      &quot;\\.(css|less)$&quot;: &quot;&lt;rootDir&gt;/__mocks__/styleMock.js&quot;,
+      &quot;\\.(gif|ttf|eot|svg)$&quot;: &quot;&lt;rootDir&gt;/__mocks__/fileMock.js&quot;
+    }
+  }
+}
+</code></pre><p>注意：<code>&lt;rootDir&gt;</code>是一个特殊的令牌，将Jest替换为项目的根。在大多数情况下，<code>package.json</code>除非您<code>rootDir</code>在配置中指定自定义选项，否则它将是您所在的文件夹。</p>
+<p>同样webpack的<code>resolve.root</code>选项，如设置的<code>NODE_PATH</code>env变量，都可以设置或使用<code>modulePaths</code>选项</p>
+<pre><code>// package.json
+{
+  &quot;jest&quot;: {
+    &quot;modulePaths&quot;: [&quot;/shared/vendor/modules&quot;],
+    &quot;moduleFileExtensions&quot;: [&quot;js&quot;, &quot;jsx&quot;],
+    &quot;moduleDirectories&quot;: [&quot;node_modules&quot;, &quot;bower_components&quot;, &quot;shared&quot;],
+    &quot;moduleNameMapper&quot;: {
+      &quot;\\.(css|less)$&quot;: &quot;&lt;rootDir&gt;/__mocks__/styleMock.js&quot;,
+      &quot;\\.(gif|ttf|eot|svg)$&quot;: &quot;&lt;rootDir&gt;/__mocks__/fileMock.js&quot;
+    }
+  }
+}
+</code></pre><p>最后，我们必须处理webpack <code>alias</code>。为此，我们可以<code>moduleNameMapper</code>再次使用该选项。</p>
+<pre><code>// package.json
+{
+  &quot;jest&quot;: {
+    &quot;modulePaths&quot;: [&quot;/shared/vendor/modules&quot;],
+    &quot;moduleFileExtensions&quot;: [&quot;js&quot;, &quot;jsx&quot;],
+    &quot;moduleDirectories&quot;: [&quot;node_modules&quot;, &quot;bower_components&quot;, &quot;shared&quot;],
+
+    &quot;moduleNameMapper&quot;: {
+      &quot;\\.(css|less)$&quot;: &quot;&lt;rootDir&gt;/__mocks__/styleMock.js&quot;,
+      &quot;\\.(gif|ttf|eot|svg)$&quot;: &quot;&lt;rootDir&gt;/__mocks__/fileMock.js&quot;,
+
+      &quot;^react(.*)$&quot;: &quot;&lt;rootDir&gt;/vendor/react-master$1&quot;,
+      &quot;^config$&quot;: &quot;&lt;rootDir&gt;/configs/app-config.js&quot;
+    }
+  }
+}
+</code></pre><p>配置完成。webpack是一个复杂和灵活的工具，所以你可能需要做一些调整，以符合你的特定应用的需要。 。</p>
+<blockquote>
+<p>注：对于更复杂的webpack配置，你可能需要研究一些项目，例如：<a href="https://github.com/istarkov/babel-plugin-webpack-loaders">babel-plugin-webpack-loaders</a>。</p>
+</blockquote>
+<h2 id="-webpack-2">使用webpack 2</h2>
+<p>webpack 2提供原生支持ES模块。Jest在Node中运行，因此需要将ES模块转换为CommonJS模块。这样，如果您使用的是webpack 2，则很可能希望将Babel配置为仅在<code>test</code>环境中将ES模块转换为CommonJS模块。</p>
+<pre><code>// .babelrc
+{
+  &quot;presets&quot;: [[&quot;env&quot;, {&quot;modules&quot;: false}]],
+
+  &quot;env&quot;: {
+    &quot;test&quot;: {
+      &quot;plugins&quot;: [&quot;transform-es2015-modules-commonjs&quot;]
+    }
+  }
+}
+</code></pre><p>注意：Jest缓存文件以加快测试执行速度。如果您更新了.babelrc并且Jest仍然无法正常运行，请尝试使用运行Jest <code>--no-cache</code>。</p>
+<p>如果您使用动态导入（<code>import(&#39;some-file.js&#39;).then(module =&gt; ...)</code>），则需要启用该<code>dynamic-import-node</code>插件。</p>
+<pre><code>// .babelrc
+{
+  &quot;presets&quot;: [[&quot;env&quot;, {&quot;modules&quot;: false}]],
+
+  &quot;plugins&quot;: [&quot;syntax-dynamic-import&quot;],
+
+  &quot;env&quot;: {
+    &quot;test&quot;: {
+      &quot;plugins&quot;: [&quot;dynamic-import-node&quot;]
+    }
+  }
+}
+
+</code></pre><p>有关如何在带有React，Redux和Node的Webpack中使用Jest的示例，可以在此处查看一个示例。</p>
+<h1 id="-puppeteer-js-">与puppeteer.js一起使用</h1>
+<p>借助<a href="https://jestjs.io/docs/zh-Hans/configuration#globalsetup-string">Global Setup / Teardown</a>和<a href="https://jestjs.io/docs/zh-Hans/configuration#testenvironment-string">Async Test Environment</a> API，Jest可以与<a href="https://github.com/GoogleChrome/puppeteer">puppeteer</a>一起顺利运行。</p>
+<p>  如果您的测试使用<code>page.$eval</code>，<code>page.$$eval</code>或者<code>page.evaluate</code>传递的函数是在Jest范围之外执行的，则当前无法使用Puppeteer为测试文件生成代码覆盖率。在GitHub上查看<a href="https://github.com/facebook/jest/issues/7962#issuecomment-495272339">问题＃7962，</a>以找到解决方法。</p>
+<h2 id="-">使用玩笑木偶预设</h2>
+<p><a href="https://github.com/smooth-code/jest-puppeteer">Jest Puppeteer</a>提供了使用Puppeteer运行测试所需的所有配置。</p>
+<ol>
+<li>首次安装 <code>jest-puppeteer</code></li>
+</ol>
+<pre><code>yarn add --dev jest-puppeteer
+</code></pre><p>2.在Jest配置中指定预设：</p>
+<pre><code>{
+  &quot;preset&quot;: &quot;jest-puppeteer&quot;
+}
+</code></pre><p>3.编写测试</p>
+<pre><code>describe(&#39;Google&#39;, () =&gt; {
+  beforeAll(async () =&gt; {
+    await page.goto(&#39;https://google.com&#39;);
+  });
+
+  it(&#39;should be titled &quot;Google&quot;&#39;, async () =&gt; {
+    await expect(page.title()).resolves.toMatch(&#39;Google&#39;);
+  });
+});
+</code></pre><p>无需加载任何依赖项。人偶<code>page</code>和<code>browser</code>班级将自动公开</p>
+<p>请参阅<a href="https://github.com/smooth-code/jest-puppeteer">文档</a>。</p>
+<p>自定义的例子没有jest-puppeteer 预设</p>
+<p>你也可以勾搭puppeteer从头开始。其基本思想是:</p>
+<ol>
+<li>启动和文件的websocket端点的puppeteer与全球设置</li>
+<li>从每个测试环境连接到puppeteer</li>
+<li>关闭木偶戏与全球拆卸</li>
+</ol>
+<p>这是GlobalSetup脚本的示例</p>
+<pre><code>// setup.js
+const puppeteer = require(&#39;puppeteer&#39;);
+const mkdirp = require(&#39;mkdirp&#39;);
+const path = require(&#39;path&#39;);
+const fs = require(&#39;fs&#39;);
+const os = require(&#39;os&#39;);
+
+const DIR = path.join(os.tmpdir(), &#39;jest_puppeteer_global_setup&#39;);
+
+module.exports = async function() {
+  const browser = await puppeteer.launch();
+  // store the browser instance so we can teardown it later
+  // this global is only available in the teardown but not in TestEnvironments
+  global.__BROWSER_GLOBAL__ = browser;
+
+  // use the file system to expose the wsEndpoint for TestEnvironments
+  mkdirp.sync(DIR);
+  fs.writeFileSync(path.join(DIR, &#39;wsEndpoint&#39;), browser.wsEndpoint());
+};
+</code></pre><p>然后我们需要一个针对木偶的自定义测试环境</p>
+<pre><code>// puppeteer_environment.js
+const NodeEnvironment = require(&#39;jest-environment-node&#39;);
+const fs = require(&#39;fs&#39;);
+const path = require(&#39;path&#39;);
+const puppeteer = require(&#39;puppeteer&#39;);
+const os = require(&#39;os&#39;);
+
+const DIR = path.join(os.tmpdir(), &#39;jest_puppeteer_global_setup&#39;);
+
+class PuppeteerEnvironment extends NodeEnvironment {
+  constructor(config) {
+    super(config);
+  }
+
+  async setup() {
+    await super.setup();
+    // get the wsEndpoint
+    const wsEndpoint = fs.readFileSync(path.join(DIR, &#39;wsEndpoint&#39;), &#39;utf8&#39;);
+    if (!wsEndpoint) {
+      throw new Error(&#39;wsEndpoint not found&#39;);
+    }
+
+    // connect to puppeteer
+    this.global.__BROWSER__ = await puppeteer.connect({
+      browserWSEndpoint: wsEndpoint,
+    });
+  }
+
+  async teardown() {
+    await super.teardown();
+  }
+
+  runScript(script) {
+    return super.runScript(script);
+  }
+}
+
+module.exports = PuppeteerEnvironment;
+</code></pre><p>最后，我们可以关闭puppeteer实例并清理文件</p>
+<pre><code>// teardown.js
+const os = require(&#39;os&#39;);
+const rimraf = require(&#39;rimraf&#39;);
+const path = require(&#39;path&#39;);
+
+const DIR = path.join(os.tmpdir(), &#39;jest_puppeteer_global_setup&#39;);
+module.exports = async function() {
+  // close the browser instance
+  await global.__BROWSER_GLOBAL__.close();
+
+  // clean-up the wsEndpoint file
+  rimraf.sync(DIR);
+};
+</code></pre><p>完成所有设置后，我们现在可以像这样编写测试：</p>
+<pre><code>// test.js
+const timeout = 5000;
+
+describe(
+  &#39;/ (Home Page)&#39;,
+  () =&gt; {
+    let page;
+    beforeAll(async () =&gt; {
+      page = await global.__BROWSER__.newPage();
+      await page.goto(&#39;https://google.com&#39;);
+    }, timeout);
+
+    it(&#39;should load without error&#39;, async () =&gt; {
+      const text = await page.evaluate(() =&gt; document.body.textContent);
+      expect(text).toContain(&#39;google&#39;);
+    });
+  },
+  timeout,
+);
+</code></pre><p>最后，设置<code>jest.config.js</code>为从这些文件读取。（<code>jest-puppeteer</code>预设在引擎盖下执行以下操作。）</p>
+<pre><code>module.exports = {
+  globalSetup: &#39;./setup.js&#39;,
+  globalTeardown: &#39;./teardown.js&#39;,
+  testEnvironment: &#39;./puppeteer_environment.js&#39;,
+};
+</code></pre><h1 id="dom-">DOM操作</h1>
+<p>通常认为很难测试的另一类功能是直接操作DOM的代码。让我们看看如何测试下面的jQuery代码片段，这些片段一个div到body中</p>
+<pre><code>// 被测试的文件 jsDom1.js
+
+import $ from &#39;jquery&#39;;
+
+const addDivToBody = () =&gt; {
+    $(&#39;body&#39;).append(&#39;&lt;div/&gt;&#39;)
+};
+
+export default addDivToBody;
+</code></pre><pre><code>// 测试用例文件  jsDom1.test.js
+// 导入js操作dom的文件
+import addDivToBody from &#39;../jsDom1&#39;;
+import $ from &#39;jquery&#39;;
+
+test(&#39;测试 addDivToBody&#39;, () =&gt; {
+  // 调用添加 dom 元素到body 中
+    addDivToBody();
+  addDivToBody();
+  // 测试结果是不是添加了两个div
+    expect($(&#39;body&#39;).find(&#39;div&#39;).length).toBe(2);
+    console.log($(&#39;body&#39;).find(&#39;div&#39;).length);
+})
+
+
+</code></pre><p>让我们看看如何测试下面的jQuery代码片段，这些片段侦听click事件，异步获取一些数据并设置span的内容。</p>
+<pre><code>// displayUser.js
+&#39;use strict&#39;;
+
+const $ = require(&#39;jquery&#39;);
+// const fetchCurrentUser = require(&#39;./fetchCurrentUser.js&#39;);
+
+$(&#39;#button&#39;).click(() =&gt; {
+    const user={
+        loggedIn:true,
+        fullName:&#39;Johnny Cash&#39;
+    }
+    const loggedText = &#39;Logged &#39; + (user.loggedIn ? &#39;In&#39; : &#39;Out&#39;);
+    $(&#39;#username&#39;).text(user.fullName + &#39; - &#39; + loggedText);
+
+});
+</code></pre><p>测试用例代码</p>
+<pre><code>// __tests__/displayUser-test.js
+&#39;use strict&#39;;
+
+// jest.mock(&#39;../fetchCurrentUser&#39;);
+
+test(&#39;displays a user after a click&#39;, () =&gt; {
+  // Set up our document body
+  document.body.innerHTML =
+    &#39;&lt;div&gt;&#39; +
+    &#39;  &lt;span id=&quot;username&quot; /&gt;&#39; +
+    &#39;  &lt;button id=&quot;button&quot; /&gt;&#39; +
+    &#39;&lt;/div&gt;&#39;;
+
+  // This module has a side-effect
+  require(&#39;../displayUser&#39;);
+
+  const $ = require(&#39;jquery&#39;);
+//   const fetchCurrentUser = require(&#39;../fetchCurrentUser&#39;);
+
+  // Tell the fetchCurrentUser mock function to automatically invoke
+  // its callback with some data
+//   fetchCurrentUser.mockImplementation(cb =&gt; {
+//     cb({
+//       fullName: &#39;Johnny Cash&#39;,
+//       loggedIn: true,
+//     });
+//   });
+
+  // Use jquery to emulate a click on our button
+  $(&#39;#button&#39;).click();
+
+  // Assert that the fetchCurrentUser function was called, and that the
+  // #username span&#39;s inner text was updated as we&#39;d expect it to.
+//   expect(fetchCurrentUser).toBeCalled();
+console.log($(&#39;#username&#39;).text())
+    expect($(&#39;#username&#39;).text()).toEqual(&#39;Johnny Cash - Logged In&#39;);
+});
+</code></pre><p>被测试的函数在<code>#button</code>DOM元素上添加了一个事件侦听器，因此我们需要为测试正确设置DOM。Jest附带了一个<code>jsdom</code>可模拟DOM环境的功能，就像您在浏览器中一样。这意味着我们调用的每个DOM API的观察方式都可以与浏览器中观察到的方式相同！</p>
+<p>我们mock了<code>fetchCurrentUser.js</code>的实现，这样我们的测试就不会产生真正的网络请求，甚至使用本地mock的数据。迭代速度。</p>
+<p>这个例子的代码可以<a href="https://github.com/facebook/jest/tree/master/examples/jquery">示例/ jquery</a>找到。</p>
+<h1 id="watch-plugins">Watch Plugins</h1>
+<p>Jest监视插件系统提供了一种方法，可以挂接到Jest的特定部分并定义监视模式菜单提示符，该菜单提示符在按键时执行代码。结合使用这些功能，您可以开发针对工作流程定制的交互式体验。</p>
+<h2 id="watch-plugin-interface">Watch Plugin Interface</h2>
+<pre><code>class MyWatchPlugin {
+  // Add hooks to Jest lifecycle events
+  apply(jestHooks) {}
+
+  // Get the prompt information for interactive plugins
+  getUsageInfo(globalConfig) {}
+
+  // Executed when the key from `getUsageInfo` is input
+  run(globalConfig, updateConfigAndRun) {}
+}
+</code></pre><h2 id="hooking-into-jest">Hooking into Jest</h2>
+<p>要将手表插件连接到Jest，请<code>watchPlugins</code>在Jest配置下添加其路径：</p>
+<pre><code>// jest.config.js
+module.exports = {
+  // ...
+  watchPlugins: [&#39;path/to/yourWatchPlugin&#39;],
+};
+</code></pre><p>自定义手表插件可以添加钩子到Jest事件。可以在监视模式菜单中添加这些挂钩，也可以不添加。</p>
+<h3 id="apply-jesthooks-"><code>apply(jestHooks)</code></h3>
+<p>可以通过实现该<code>apply</code>方法来附加笑话钩。此方法接收一个<code>jestHooks</code>参数，该参数允许插件挂接到测试运行生命周期的特定部分。</p>
+<pre><code>class MyWatchPlugin {
+  apply(jestHooks) {}
+}
+</code></pre><p>以下是Jest中可用的钩子</p>
+<pre><code>jestHooks.shouldRunTestSuite(testSuiteInfo)
+
+</code></pre><p>返回一个布尔值（或<code>Promise&lt;boolean&gt;</code>用于处理异步操作）以指定是否应该运行测试。</p>
+<p>例如：</p>
+<pre><code>class MyWatchPlugin {
+  apply(jestHooks) {
+    jestHooks.shouldRunTestSuite(testSuiteInfo =&gt; {
+      return testSuiteInfo.testPath.includes(&#39;my-keyword&#39;);
+    });
+
+    // or a promise
+    jestHooks.shouldRunTestSuite(testSuiteInfo =&gt; {
+      return Promise.resolve(testSuiteInfo.testPath.includes(&#39;my-keyword&#39;));
+    });
+  }
+}
+</code></pre><h4 id="jesthooks-ontestruncomplete-results-"><code>jestHooks.onTestRunComplete(results)</code></h4>
+<p>在每次测试运行结束时被调用。它以测试结果作为参数。</p>
+<p>例如：</p>
+<pre><code>class MyWatchPlugin {
+  apply(jestHooks) {
+    jestHooks.onTestRunComplete(results =&gt; {
+      this._hasSnapshotFailure = results.snapshot.failure;
+    });
+  }
+}
+</code></pre><h4 id="jesthooks-onfilechange-projects-"><code>jestHooks.onFileChange({projects})</code></h4>
+<p>文件系统发生变化时被调用</p>
+<ul>
+<li><code>projects: Array&lt;config: ProjectConfig, testPaths: Array&lt;string&gt;</code>：包括Jest正在监视的所有测试路径。</li>
+</ul>
+<p>例如：</p>
+<pre><code>class MyWatchPlugin {
+  apply(jestHooks) {
+    jestHooks.onFileChange(({projects}) =&gt; {
+      this._projects = projects;
+    });
+  }
+}
+</code></pre><h2 id="watch-menu-integration">Watch Menu Integration</h2>
+<p>自定义监视插件还可以通过在<code>getUsageInfo</code>方法中指定一个密钥/提示对以及一个<code>run</code>用于执行密钥的方法，来向监视菜单添加或覆盖功能。</p>
+<h3 id="getusageinfo-globalconfig-"><code>getUsageInfo(globalConfig)</code></h3>
+<p>要将键添加到监视菜单，请实现<code>getUsageInfo</code>方法，返回键和提示：</p>
+<pre><code>class MyWatchPlugin {
+  getUsageInfo(globalConfig) {
+    return {
+      key: &#39;s&#39;,
+      prompt: &#39;do something&#39;,
+    };
+  }
+}
+</code></pre><p>这会在观看模式菜单<em>（**）中</em>添加一行<em>› Press s to do something.</em></p>
+<pre><code>Watch Usage
+ › Press p to filter by a filename regex pattern.
+ › Press t to filter by a test name regex pattern.
+ › Press q to quit watch mode.
+ › Press s to do something. // &lt;-- This is our plugin
+ › Press Enter to trigger a test run.
+</code></pre><p><strong>注意</strong>：如果您插件的密钥已经作为默认密钥存在，那么您的插件将覆盖该密钥。</p>
+<h3 id="run-globalconfig-updateconfigandrun-"><code>run(globalConfig, updateConfigAndRun)</code></h3>
+<h3 id="run-globalconfig-updateconfigandrun-"><code>run(globalConfig, updateConfigAndRun)</code></h3>
+<p>要处理所返回键的按键事件<code>getUsageInfo</code>，您可以实现该<code>run</code>方法。<code>Promise&lt;boolean&gt;</code>当插件要将控制权返回给Jest时，此方法返回一个可以解决的方法。该<code>boolean</code>如果玩笑指定应重新运行测试中，它取得了控制权交还给之后。</p>
+<ul>
+<li><code>globalConfig</code>：表示Jest当前的全局配置</li>
+<li><code>updateConfigAndRun</code>：允许您在交互式插件运行时触发测试运行。</li>
+</ul>
+<pre><code>class MyWatchPlugin {
+  run(globalConfig, updateConfigAndRun) {
+    // do something.
+  }
+}
+</code></pre><p><strong>注意</strong>：如果您调用<code>updateConfigAndRun</code>，则您的<code>run</code>方法不应解析为真实值，因为那样会触发两次运行。</p>
+<h4 id="-">授权配置密钥</h4>
+<p>出于稳定性和安全性原因，只能使用来更新全局配coverageReporters置密钥的一部分<code>updateConfigAndRun</code>。当前的白名单如下：</p>
+<ul>
+<li><a href="https://jestjs.io/docs/zh-Hans/configuration.html#bail-number--boolean"><code>bail</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/cli.html#--changedsince"><code>changedSince</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/configuration.html#collectcoverage-boolean"><code>collectCoverage</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/configuration.html#collectcoveragefrom-array"><code>collectCoverageFrom</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/configuration.html#collectcoverageonlyfrom-array"><code>collectCoverageOnlyFrom</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/configuration.html#coveragedirectory-string"><code>coverageDirectory</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/configuration.html#coveragereporters-arraystring"><code>coverageReporters</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/configuration.html#notify-boolean"><code>notify</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/configuration.html#notifymode-string"><code>notifyMode</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/configuration.html#onlyfailures-boolean"><code>onlyFailures</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/configuration.html#reporters-arraymodulename--modulename-options"><code>reporters</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/cli.html#--testnamepatternregex"><code>testNamePattern</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/cli.html#--testpathpatternregex"><code>testPathPattern</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/cli.html#--updatesnapshot"><code>updateSnapshot</code></a></li>
+<li><a href="https://jestjs.io/docs/zh-Hans/configuration.html#verbose-boolean"><code>verbose</code></a></li>
+</ul>
+<h2 id="-">客制化</h2>
+<p>可以通过Jest配置自定义插件。</p>
+<pre><code>// jest.config.js
+module.exports = {
+  // ...
+  watchPlugins: [
+    [
+      &#39;path/to/yourWatchPlugin&#39;,
+      {
+        key: &#39;k&#39;, // &lt;- your custom key
+        prompt: &#39;show a custom prompt&#39;,
+      },
+    ],
+  ],
+};
+</code></pre><p>推荐的配置名称：</p>
+<ul>
+<li><code>key</code>：修改插件密钥。</li>
+<li><code>prompt</code>：允许用户自定义插件提示中的文本。</li>
+</ul>
+<p>如果用户提供了自定义配置，它将作为参数传递给插件构造函数。</p>
+<pre><code>class MyWatchPlugin {
+  constructor({config}) {}
+}
+</code></pre><h2 id="-">选择一个好的钥匙</h2>
+<p>Jest允许第三方插件覆盖其某些内置功能键，但不是全部。具体来说，以下密钥<strong>不可重写</strong>：</p>
+<ul>
+<li><code>c</code> （清除过滤器图案）</li>
+<li><code>i</code> （以交互方式更新不匹配的快照）</li>
+<li><code>q</code> （退出）</li>
+<li><code>u</code> （更新所有不匹配的快照）</li>
+<li><code>w</code> （显示监视模式使用情况/可用操作）</li>
+</ul>
+<p>内置功能的以下键<strong>可以被覆盖</strong>：</p>
+<ul>
+<li><code>p</code> （测试文件名模式）</li>
+<li><code>t</code> （测试名称模式）</li>
+</ul>
+<p>如您所料，可以声明未由内置功能使用的任何密钥。尽量避免使用各种键盘（例如）很难获得的键，或者默认情况下不可见的键（例如<code>é</code>，<code>€</code>许多Mac键盘没有诸如<code>|</code>，<code>\</code>,<code>[</code>等] 字符的视觉提示。</p>
+<h3 id="-">发生冲突时</h3>
+<p>如果您的插件尝试覆盖保留的密钥，Jest将以描述性消息出错，例如：</p>
+<blockquote>
+<p>监视插件YourFaultyPlugin尝试注册key ，该密钥在内部保留用于退出监视模式。请更改此插件的配置密钥。</p>
+</blockquote>
+<p>也禁止第三方插件覆盖已配置的插件列表（<code>watchPlugins</code>数组设置）中较早出现的另一个第三方插件已经保留的密钥。发生这种情况时，您还会收到一条错误消息，尝试帮助您解决此问题：</p>
+<blockquote>
+<p>观看插件YourFaultyPlugin和theirFaultyPlugin都尝试注册密钥 。请更改其中一个有冲突的插件的密钥配置，以避免重叠。</p>
+</blockquote>
+<h1 id="-">故障排除</h1>
+<p>嗯，出了什么问题？使用本指南解决Jest的问题。</p>
+<h2 id="-">发现测试失败的原因</h2>
+<p>请尝试使用Node内置的调试功能。注意：这仅在Node.js 8+中有效。</p>
+<p>在你的单元测试中添加一条<code>debugger;</code>语句，然后在项目目录中执行：</p>
+<pre><code class="lang-bash">node --inspect-brk node_modules/.bin/jest --runInBand [any other arguments here]
+or on Windows
+node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand [any other arguments here]
+</code></pre>
+<p>这将在外部调试器可以连接到的Node进程中运行Jest。请注意，该过程将暂停，直到调试器连接到它为止。</p>
+<p>要在Google Chrome（或任何基于Chromium的浏览器）中进行调试，请打开浏览器并转到<code>chrome://inspect</code>并单击“打开Node专用DevTools”，这将为您提供可以连接到的可用节点实例的列表。<code>localhost:9229</code>运行上述命令后，单击终端上显示的地址（通常是），您将能够使用Chrome的DevTools调试Jest。</p>
+<p>将显示Chrome开发者工具，并在Jest CLI脚本的第一行设置一个断点（这样做是为了让您有时间打开开发者工具，并在有时间之前阻止Jest执行） 。当Jest执行到添加了<code>debugger;</code>语句的单元测试时，执行就会暂停，此时，你可以检查当前的值域和调用栈。</p>
+<blockquote>
+<p>注：CLI中<code>--runInBand</code>选项能够确保Jest执行在同一个进程中，而不是在多个子进程中分别执行。通常情况下，Jest并行化测试会跨进程执行，但是很难同时调试多个进程。</p>
+</blockquote>
+<h2 id="vs-">VS代码中的调试</h2>
+<p>使用<a href="https://code.visualstudio.com/">Visual Studio Code的</a>内置<a href="https://code.visualstudio.com/docs/nodejs/nodejs-debugging">调试器</a>调试Jest测试有多种方法。</p>
+<p>要附加内置调试器，请按照上述步骤运行测试：</p>
+<pre><code class="lang-bash">node --inspect-brk node_modules/.bin/jest --runInBand [any other arguments here]
+or on Windows
+node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand [any other arguments here]
+</code></pre>
+<p>然后使用以下<code>launch.json</code>配置连接VS Code的调试器：</p>
+<pre><code class="lang-json">{
+  &quot;version&quot;: &quot;0.2.0&quot;,
+  &quot;configurations&quot;: [
+    {
+      &quot;type&quot;: &quot;node&quot;,
+      &quot;request&quot;: &quot;attach&quot;,
+      &quot;name&quot;: &quot;Attach&quot;,
+      &quot;port&quot;: 9229
+    }
+  ]
+}
+</code></pre>
+<p>要自动启动并附加到运行测试的进程，请使用以下配置：</p>
+<pre><code class="lang-json">{
+  &quot;version&quot;: &quot;0.2.0&quot;,
+  &quot;configurations&quot;: [
+    {
+      &quot;name&quot;: &quot;Debug Jest Tests&quot;,
+      &quot;type&quot;: &quot;node&quot;,
+      &quot;request&quot;: &quot;launch&quot;,
+      &quot;runtimeArgs&quot;: [
+        &quot;--inspect-brk&quot;,
+        &quot;${workspaceRoot}/node_modules/.bin/jest&quot;,
+        &quot;--runInBand&quot;
+      ],
+      &quot;console&quot;: &quot;integratedTerminal&quot;,
+      &quot;internalConsoleOptions&quot;: &quot;neverOpen&quot;,
+      &quot;port&quot;: 9229
+    }
+  ]
+}
+</code></pre>
+<p>或Windows以下版本：</p>
+<pre><code class="lang-json">{
+  &quot;version&quot;: &quot;0.2.0&quot;,
+  &quot;configurations&quot;: [
+    {
+      &quot;name&quot;: &quot;Debug Jest Tests&quot;,
+      &quot;type&quot;: &quot;node&quot;,
+      &quot;request&quot;: &quot;launch&quot;,
+      &quot;runtimeArgs&quot;: [
+        &quot;--inspect-brk&quot;,
+        &quot;${workspaceRoot}/node_modules/jest/bin/jest.js&quot;,
+        &quot;--runInBand&quot;
+      ],
+      &quot;console&quot;: &quot;integratedTerminal&quot;,
+      &quot;internalConsoleOptions&quot;: &quot;neverOpen&quot;,
+      &quot;port&quot;: 9229
+    }
+  ]
+}
+</code></pre>
+<p>如果您使用的是Facebook的<a href="https://github.com/facebookincubator/create-react-app"><code>create-react-app</code></a>，则可以使用以下配置调试Jest测试：</p>
+<pre><code class="lang-json">{
+  &quot;version&quot;: &quot;0.2.0&quot;,
+  &quot;configurations&quot;: [
+    {
+      &quot;name&quot;: &quot;Debug CRA Tests&quot;,
+      &quot;type&quot;: &quot;node&quot;,
+      &quot;request&quot;: &quot;launch&quot;,
+      &quot;runtimeExecutable&quot;: &quot;${workspaceRoot}/node_modules/.bin/react-scripts&quot;,
+      &quot;args&quot;: [&quot;test&quot;, &quot;--runInBand&quot;, &quot;--no-cache&quot;, &quot;--env=jsdom&quot;],
+      &quot;cwd&quot;: &quot;${workspaceRoot}&quot;,
+      &quot;protocol&quot;: &quot;inspector&quot;,
+      &quot;console&quot;: &quot;integratedTerminal&quot;,
+      &quot;internalConsoleOptions&quot;: &quot;neverOpen&quot;
+    }
+  ]
+}
+</code></pre>
+<p>更多关于Node调试的信息，可以查看<a href="https://nodejs.org/api/debugger.html">这里</a></p>
+<h2 id="webstorm-">WebStorm中的调试</h2>
+<p>在<a href="https://www.jetbrains.com/webstorm/">WebStorm中</a>调试Jest测试的最简单方法是使用<code>Jest run/debug configuration</code>。它将启动测试并自动附加调试器。</p>
+<p>在WebStorm菜单中，<code>Run</code>选择<code>Edit Configurations...</code>。然后单击<code>+</code>并选择<code>Jest</code>。（可选）指定Jest配置文件，其他选项和环境变量。保存配置，将断点放入代码中，然后单击绿色的调试图标以开始调试。</p>
+<p>如果您使用的是Facebook的<a href="https://github.com/facebookincubator/create-react-app"><code>create-react-app</code></a>，请在Jest运行/调试配置<code>react-scripts</code>中的Jest包字段中指定包的路径，然后添加<code>--env=jsdom</code>到Jest选项字段中。</p>
+<h2 id="-">缓存问题</h2>
+<p>转换脚本已更改或Babel已更新，并且Jest无法识别更改？</p>
+<p>使用尝试<a href="https://jestjs.io/docs/zh-Hans/cli#--cache"><code>--no-cache</code></a>选项对话玩笑会缓存转换的模块文件来加速测试的执行如果您使用的是自己定制的变压器，考虑增加一个。<code>getCacheKey</code>它的功能：<a href="https://github.com/facebook/relay/blob/58cf36c73769690f0bbf90562707eadb062b029d/scripts/jest/preprocessor.js#L56-L61">在继电器getCacheKey</a>。</p>
+<h2 id="-">未返回的诺言</h2>
+<p>如果一个Promise不再返回任何东西（no resolve）你会看到上面下边的报错：</p>
+<pre><code class="lang-bash">- Error: Timeout - Async callback was not invoked within timeout specified by jasmine.DEFAULT_TIMEOUT_INTERVAL.`
+</code></pre>
+<p>例如<code>global.Promise = jest.requireActual(&#39;promise&#39;);</code>，考虑用您自己的全局承诺实现替换全局承诺实现，和/或将使用过的Promise库合并为一个。</p>
+<p>如果您的测试长时间运行，则可能需要考虑通过致电延长超时时间 <code>jest.setTimeout</code></p>
+<pre><code class="lang-js">jest.setTimeout(10000); // 10 second timeout
+</code></pre>
+<h2 id="-">看门狗问题</h2>
+<p>尝试使用运行Jest <a href="https://jestjs.io/docs/zh-Hans/cli#--watchman"><code>--no-watchman</code></a>或将<code>watchman</code>配置选项设置为<code>false</code>。</p>
+<p>更多详情，查看<a href="https://facebook.github.io/watchman/docs/troubleshooting.html">看门狗疑难解答</a>。</p>
+<h2 id="docker-ci-continuous-integration-jest-">Docker和/或持续集成（CI，Continuous Integration）服务器中执行Jest测试极慢。</h2>
+<p>虽然玩笑是大部分时间非常快的现代多核计算机具有快速的固态硬盘，它可能是缓慢的某些设置为我们的用户<a href="https://github.com/facebook/jest/issues/1395">已经</a> <a href="https://github.com/facebook/jest/issues/1524#issuecomment-260246008">发现了</a>。</p>
+<p>根据<a href="https://github.com/facebook/jest/issues/1524#issuecomment-262366820">调查结果</a>，减轻此问题并将速度提高多达50％的一种方法是依次运行测试。</p>
+<p>达成上述目的，可以使用<a href="https://jestjs.io/docs/zh-Hans/cli#--runinband"><code>--runInBand</code></a>选项：</p>
+<pre><code class="lang-bash"># Using Jest CLI
+jest --runInBand
+
+# Using yarn test (e.g. with create-react-app)
+yarn test --runInBand
+</code></pre>
+<p>对持续集成服务器，如特拉维斯-CI加速测试执行时间另一种方法是将最大工作池设置为〜<em>4</em>。特别是在Travis-CI上，这可以将测试执行时间减少一半。注意：可用于开源项目的Travis CI <em>免费</em>计划仅包括2个CPU内核。</p>
+<pre><code class="lang-bash"># Using Jest CLI
+jest --maxWorkers=4
+
+# Using yarn test (e.g. with create-react-app)
+yarn test --maxWorkers=4
+</code></pre>
+<h2 id="-">兼容问题</h2>
+<p>Jest利用了Node 6中添加的新功能。我们建议您升级到Node的最新稳定版本。支持的最低版本是<code>v6.0.0</code>。不支持版本<code>0.x.x</code>，<code>4.x.x</code>因为<code>jsdom</code>Jest中使用的版本不支持节点4。但是，如果需要在节点4上运行Jest，则可以使用<code>testEnvironment</code>config来使用支持节点4 的<a href="https://jestjs.io/docs/en/configuration.html#testenvironment-string">自定义环境</a>，例如<a href="https://yarnpkg.com/en/package/jest-environment-node"><code>jest-environment-node</code></a>。</p>
+<h2 id="coveragepathignorepatterns-"><code>coveragePathIgnorePatterns</code> 似乎没有任何作用。</h2>
+<p>确保您没有使用<code>babel-plugin-istanbul</code>插件。Jest包装了Istanbul，因此也告诉了Istanbul哪些文件可用于覆盖范围收集。使用时<code>babel-plugin-istanbul</code>，Babel处理的每个文件都将具有coverage收集代码，因此不会被忽略<code>coveragePathIgnorePatterns</code>。</p>
+<h2 id="-">定义测试</h2>
+<p>必须同步定义测试，以便Jest能够收集您的测试。</p>
+<p>为了说明为什么会发生这种情况，请想象一下我们编写了这样的测试：</p>
+<pre><code class="lang-js">// Don&#39;t do this it will not work
+setTimeout(() =&gt; {
+  it(&#39;passes&#39;, () =&gt; expect(1).toBe(1));
+}, 0);
+</code></pre>
+<p>当Jest运行测试以收集<code>test</code>s时，将找不到任何内容，因为我们已将定义设置为在事件循环的下一个计时周期异步发生。</p>
+<p><em>注意：</em>这意味着在使用时<code>test.each</code>，不能在<code>beforeEach</code>/ 中异步设置表<code>beforeAll</code>。</p>
+<h2 id="-">尚未解决问题？</h2>
+<p>点<a href="https://jestjs.io/help.html">这里</a>查看帮助</p>
+<h1 id="-react-">测试React应用</h1>
+<p>在Facebook，我们使用Jest测试<a href="http://facebook.github.io/react/">React</a>应用程序。</p>
+<h2 id="-">安装</h2>
+<h3 id="-react-app">使用创建React App</h3>
+<p>如果您是React新手，我们建议使用<a href="https://github.com/facebookincubator/create-react-app">Create React App</a>。它已经包含了<a href="https://facebook.github.io/create-react-app/docs/running-tests#docsNav">可用的Jest</a>！您只需要添加<code>react-test-renderer</code>来渲染快照。</p>
+<p>运行</p>
+<pre><code class="lang-bash">yarn add --dev react-test-renderer
+</code></pre>
+<h3 id="-react-app">不使用创建React App</h3>
+<p>如果您已经有一个应用，您仅需要安装一些包来使他们运行起来。我们使用<code>babel-jest</code>包和<code>babel-preset-react</code>，从而在测试环境中转换我们的代码。可参考<a href="https://jestjs.io/docs/zh-Hans/getting-started#using-babel">使用babel</a></p>
+<p>运行</p>
+<pre><code class="lang-bash">yarn add --dev jest babel-jest @babel/preset-env @babel/preset-react react-test-renderer
+</code></pre>
+<p>您的<code>package.json</code>文件应该像下面这样（<code>&lt;current-version&gt;</code>是当前包的最新版本号）请添加脚本项目和jest配置：</p>
+<pre><code class="lang-json">// package.json
+  &quot;dependencies&quot;: {
+    &quot;react&quot;: &quot;&lt;current-version&gt;&quot;,
+    &quot;react-dom&quot;: &quot;&lt;current-version&gt;&quot;
+  },
+  &quot;devDependencies&quot;: {
+    &quot;@babel/preset-env&quot;: &quot;&lt;current-version&gt;&quot;,
+    &quot;@babel/preset-react&quot;: &quot;&lt;current-version&gt;&quot;,
+    &quot;babel-jest&quot;: &quot;&lt;current-version&gt;&quot;,
+    &quot;jest&quot;: &quot;&lt;current-version&gt;&quot;,
+    &quot;react-test-renderer&quot;: &quot;&lt;current-version&gt;&quot;
+  },
+  &quot;scripts&quot;: {
+    &quot;test&quot;: &quot;jest&quot;
+  }
+// babel.config.js
+module.exports = {
+  presets: [&#39;@babel/preset-env&#39;, &#39;@babel/preset-react&#39;],
+};
+</code></pre>
+<p><strong>准备工作已经完成！</strong></p>
+<h3 id="-">快照测试</h3>
+<p>让我们来为一个渲染超链接的Link组件创建<a href="https://jestjs.io/docs/zh-Hans/snapshot-testing">快照测试</a></p>
+<pre><code class="lang-javascript">// Link.react.js
+import React from &#39;react&#39;;
+
+const STATUS = {
+  HOVERED: &#39;hovered&#39;,
+  NORMAL: &#39;normal&#39;,
+};
+
+export default class Link extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this._onMouseEnter = this._onMouseEnter.bind(this);
+    this._onMouseLeave = this._onMouseLeave.bind(this);
+
+    this.state = {
+      class: STATUS.NORMAL,
+    };
+  }
+
+  _onMouseEnter() {
+    this.setState({class: STATUS.HOVERED});
+  }
+
+  _onMouseLeave() {
+    this.setState({class: STATUS.NORMAL});
+  }
+
+  render() {
+    return (
+      &lt;a
+        className={this.state.class}
+        href={this.props.page || &#39;#&#39;}
+        onMouseEnter={this._onMouseEnter}
+        onMouseLeave={this._onMouseLeave}
+      &gt;
+        {this.props.children}
+      &lt;/a&gt;
+    );
+  }
+}
+</code></pre>
+<p>现在，使用React的测试渲染器和Jest的快照特性来和组件交互，获得渲染结果和生成快照文件：</p>
+<pre><code class="lang-javascript">// Link.react.test.js
+import React from &#39;react&#39;;
+import Link from &#39;../Link.react&#39;;
+import renderer from &#39;react-test-renderer&#39;;
+
+test(&#39;Link changes the class when hovered&#39;, () =&gt; {
+  const component = renderer.create(
+    &lt;Link page=&quot;http://www.facebook.com&quot;&gt;Facebook&lt;/Link&gt;,
+  );
+  let tree = component.toJSON();
+  expect(tree).toMatchSnapshot();
+
+  // manually trigger the callback
+  tree.props.onMouseEnter();
+  // re-rendering
+  tree = component.toJSON();
+  expect(tree).toMatchSnapshot();
+
+  // manually trigger the callback
+  tree.props.onMouseLeave();
+  // re-rendering
+  tree = component.toJSON();
+  expect(tree).toMatchSnapshot();
+});
+</code></pre>
+<p>当你运行<code>npm test</code>或者<code>jest</code>，将产生一个像下面的文件：</p>
+<pre><code class="lang-javascript">// __tests__/__snapshots__/Link.react.test.js.snap
+exports[`Link changes the class when hovered 1`] = `
+&lt;a
+  className=&quot;normal&quot;
+  href=&quot;http://www.facebook.com&quot;
+  onMouseEnter={[Function]}
+  onMouseLeave={[Function]}&gt;
+  Facebook
+&lt;/a&gt;
+`;
+
+exports[`Link changes the class when hovered 2`] = `
+&lt;a
+  className=&quot;hovered&quot;
+  href=&quot;http://www.facebook.com&quot;
+  onMouseEnter={[Function]}
+  onMouseLeave={[Function]}&gt;
+  Facebook
+&lt;/a&gt;
+`;
+
+exports[`Link changes the class when hovered 3`] = `
+&lt;a
+  className=&quot;normal&quot;
+  href=&quot;http://www.facebook.com&quot;
+  onMouseEnter={[Function]}
+  onMouseLeave={[Function]}&gt;
+  Facebook
+&lt;/a&gt;
+`;
+</code></pre>
+<p>如果快照测试失败，你需要去检查是否是你想要或不想要的变动。迅速符合预期，您可以通过<code>jest -u</code>调用Jest从而重新存在存在的快照。</p>
+<p>该示例代码在<a href="https://github.com/facebook/jest/tree/master/examples/snapshot">示例/快照</a></p>
+<h4 id="-16">快照测试与模拟，酶和反应16</h4>
+<p>使用Enzyme和React 16+时，有关快照测试的注意事项。如果使用以下样式模拟模块：</p>
+<pre><code class="lang-js">jest.mock(&#39;../SomeDirectory/SomeComponent&#39;, () =&gt; &#39;SomeComponent&#39;);
+</code></pre>
+<p>然后，您将在控制台中看到警告：</p>
+<pre><code class="lang-bash">Warning: &lt;SomeComponent /&gt; is using uppercase HTML. Always use lowercase HTML tags in React.
+
+# Or:
+Warning: The tag &lt;SomeComponent&gt; is unrecognized in this browser. If you meant to render a React component, start its name with an uppercase letter.
+</code></pre>
+<p>由于React 16检查元素类型的方式，因此它们触发了这些警告，并且模拟模块未通过这些检查。您的选择是：</p>
+<ol>
+<li><p>呈现为文本。这样，您就不会在快照中看到传递给模拟组件的道具，但是很简单：</p>
+<pre><code class="lang-js">jest.mock(&#39;./SomeComponent&#39;, () =&gt; () =&gt; &#39;SomeComponent&#39;);
+</code></pre>
+</li>
+<li><p>渲染为自定义元素。不会对DOM“自定义元素”进行检查，也不应发出警告。它们是小写字母，并且名称中带有短划线。</p>
+<pre><code class="lang-js">jest.mock(&#39;./Widget&#39;, () =&gt; () =&gt; &lt;mock-widget /&gt;);
+</code></pre>
+</li>
+<li><p>使用<code>react-test-renderer</code>。测试渲染器不在乎元素类型，并乐于接受例如<code>SomeComponent</code>。您可以使用测试渲染器检查快照，并使用酶分别检查组件行为。</p>
+</li>
+<li><p>一起禁用警告（应该在jest设置文件中完成）：</p>
+<pre><code class="lang-js">jest.mock(&#39;fbjs/lib/warning&#39;, () =&gt; require(&#39;fbjs/lib/emptyFunction&#39;));
+</code></pre>
+<p>通常，这不是您的选择，因为有用的警告可能会丢失。但是，在某些情况下，例如，当测试react-native的组件时，我们正在将react-native标记呈现到DOM中，而许多警告是不相关的。另一种选择是控制控制台。警告并禁止显示特定警告。</p>
+</li>
+</ol>
+<h3 id="dom-">DOM测试</h3>
+<p>如果您想断言并处理渲染的组件，则可以使用<a href="https://github.com/kentcdodds/react-testing-library">react-testing-library</a>，<a href="http://airbnb.io/enzyme/">Enzyme</a>或React的<a href="http://facebook.github.io/react/docs/test-utils.html">TestUtils</a>。以下两个示例使用了react-testing-library和Enzyme。</p>
+<h4 id="-">反应测试库</h4>
+<p>您必须运行<code>yarn add --dev @testing-library/react</code>才能使用react-testing-library。</p>
+<p>让我们实现一个复选框，该复选框在两个标签之间交换：</p>
+<pre><code class="lang-javascript">// CheckboxWithLabel.js
+
+import React from &#39;react&#39;;
+
+export default class CheckboxWithLabel extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {isChecked: false};
+
+    // bind manually because React class components don&#39;t auto-bind
+    // http://facebook.github.io/react/blog/2015/01/27/react-v0.13.0-beta-1.html#autobinding
+    this.onChange = this.onChange.bind(this);
+  }
+
+  onChange() {
+    this.setState({isChecked: !this.state.isChecked});
+  }
+
+  render() {
+    return (
+      &lt;label&gt;
+        &lt;input
+          type=&quot;checkbox&quot;
+          checked={this.state.isChecked}
+          onChange={this.onChange}
+        /&gt;
+        {this.state.isChecked ? this.props.labelOn : this.props.labelOff}
+      &lt;/label&gt;
+    );
+  }
+}
+// __tests__/CheckboxWithLabel-test.js
+import React from &#39;react&#39;;
+import {cleanup, fireEvent, render} from &#39;@testing-library/react&#39;;
+import CheckboxWithLabel from &#39;../CheckboxWithLabel&#39;;
+
+// Note: running cleanup afterEach is done automatically for you in @testing-library/react@9.0.0 or higher
+// unmount and cleanup DOM after the test is finished.
+afterEach(cleanup);
+
+it(&#39;CheckboxWithLabel changes the text after click&#39;, () =&gt; {
+  const {queryByLabelText, getByLabelText} = render(
+    &lt;CheckboxWithLabel labelOn=&quot;On&quot; labelOff=&quot;Off&quot; /&gt;,
+  );
+
+  expect(queryByLabelText(/off/i)).toBeTruthy();
+
+  fireEvent.click(getByLabelText(/off/i));
+
+  expect(queryByLabelText(/on/i)).toBeTruthy();
+});
+</code></pre>
+<p>该示例的代码可在<a href="https://github.com/facebook/jest/tree/master/examples/react-testing-library">examples / react-testing-library中获得</a>。</p>
+<h4 id="-">酵素</h4>
+<p>您必须运行<code>yarn add --dev enzyme</code>才能使用酶。如果您使用的是低于15.5.0的React版本，则还需要安装<code>react-addons-test-utils</code>。</p>
+<p>让我们使用酶而不是react-testing-library从上面重写测试。在这个例子中我们使用了酵素的<a href="http://airbnb.io/enzyme/docs/api/shallow.html">浅渲染器</a>。</p>
+<pre><code class="lang-javascript">// __tests__/CheckboxWithLabel-test.js
+
+import React from &#39;react&#39;;
+import {shallow} from &#39;enzyme&#39;;
+import CheckboxWithLabel from &#39;../CheckboxWithLabel&#39;;
+
+test(&#39;CheckboxWithLabel changes the text after click&#39;, () =&gt; {
+  // Render a checkbox with label in the document
+  const checkbox = shallow(&lt;CheckboxWithLabel labelOn=&quot;On&quot; labelOff=&quot;Off&quot; /&gt;);
+
+  expect(checkbox.text()).toEqual(&#39;Off&#39;);
+
+  checkbox.find(&#39;input&#39;).simulate(&#39;change&#39;);
+
+  expect(checkbox.text()).toEqual(&#39;On&#39;);
+});
+</code></pre>
+<p>该示例的代码可在<a href="https://github.com/facebook/jest/tree/master/examples/enzyme">examples / enzyme上找到</a>。</p>
+<h3 id="-">自定义转译器</h3>
+<p>如果您需要更多高级功能，则还可以构建自己的变压器。以下是使用babel的示例，而不是使用babel-jest：</p>
+<pre><code class="lang-javascript">// custom-transformer.js
+&#39;use strict&#39;;
+
+const {transform} = require(&#39;@babel/core&#39;);
+const jestPreset = require(&#39;babel-preset-jest&#39;);
+
+module.exports = {
+  process(src, filename) {
+    const result = transform(src, {
+      filename,
+      presets: [jestPreset],
+    });
+
+    return result ? result.code : src;
+  },
+};
+</code></pre>
+<p>不要忘记安装<code>@babel/core</code>和<code>babel-preset-jest</code>软件包，此示例可以正常工作。</p>
+<p>为了使这个与Jest一起工作，您需要更新您的Jest配置：<code>&quot;transform&quot;: {&quot;\\.js$&quot;: &quot;path/to/custom-transformer.js&quot;}</code>。</p>
+<p>如果您想建立一个带babel支持的转译器，您还可以使用babel-jest组合一个并传递选项到您的自定义配置：</p>
+<pre><code class="lang-javascript">const babelJest = require(&#39;babel-jest&#39;);
+
+module.exports = babelJest.createTransformer({
+  presets: [&#39;my-custom-preset&#39;],
+});
+</code></pre>
+<h1 id="-web-">测试Web框架</h1>
+<p>虽然Jest可能被看做为React特定的测试运行工具，实际上，其是一个万能的测试平台，其有能力适应任何JavaScript库或框架。在这一节，我们想要链接一些关于将Jest继承到其他流行JS库中的社区帖子和文章。</p>
+<h2 id="vue-js">Vue.js</h2>
+<ul>
+<li><a href="https://alexjoverm.github.io/series/Unit-Testing-Vue-js-Components-with-the-Official-Vue-Testing-Tools-and-Jest/">使用</a> Alex Jover Morales（<a href="https://twitter.com/alexjoverm">@alexjoverm</a>）的<a href="https://alexjoverm.github.io/series/Unit-Testing-Vue-js-Components-with-the-Official-Vue-Testing-Tools-and-Jest/">Jest测试Vue.js组件</a></li>
+<li><a href="https://medium.com/@kentaromiura_the_js_guy/jest-for-all-episode-1-vue-js-d616bccbe186#.d573vrce2">为所有人开玩笑：第1集—</a> Cristian Carlesso的Vue.js（<a href="https://twitter.com/kentaromiura">@kentaromiura</a>）</li>
+</ul>
+<h2 id="angularjs">AngularJS</h2>
+<ul>
+<li>Matthieu Lux（<a href="https://twitter.com/Swiip">@Swiip</a>）<a href="https://medium.com/aya-experience/testing-an-angularjs-app-with-jest-3029a613251">使用Jest测试AngularJS应用</a></li>
+<li><a href="https://engineering.talentpair.com/running-angularjs-tests-with-jest-49d0cc9c6d26">用</a><a href="https://twitter.com/benjaminbrandt">Benest</a>（<a href="https://twitter.com/benjaminbrandt">@benjaminbrandt</a>）的<a href="https://engineering.talentpair.com/running-angularjs-tests-with-jest-49d0cc9c6d26">Jest运行AngularJS测试</a></li>
+<li><a href="https://dwatow.github.io/2019/08-14-angularjs/angular-jest/?fbclid=IwAR2SrqYg_o6uvCQ79FdNPeOxs86dUqB6pPKgd9BgnHt1kuIDRyRM-ch11xg">AngularJS带有Jest动作的单元测试（繁体中文）</a> Chris Wang（<a href="https://github.com/dwatow">@dwatow</a>）</li>
+</ul>
+<h2 id="-">角度的</h2>
+<ul>
+<li>由<a href="https://twitter.com/thymikee">MichałPierzchała</a>（<a href="https://twitter.com/thymikee">@thymikee</a>）<a href="https://www.xfive.co/blog/testing-angular-faster-jest/">使用Jest快速Angular测试</a></li>
+</ul>
+<h2 id="-">手机</h2>
+<ul>
+<li><a href="https://semaphoreci.com/community/tutorials/how-to-test-react-and-mobx-with-jest">如何用Jest测试React和MobX，</a>由Will Stern（<a href="https://twitter.com/willsterndev">@willsterndev</a>）</li>
+</ul>
+<h2 id="redux">Redux</h2>
+<ul>
+<li>Redux docs <a href="https://redux.js.org/recipes/writing-tests">写测试</a></li>
+</ul>
+<h2 id="express-js">Express.js</h2>
+<ul>
+<li><a href="http://www.albertgao.xyz/2017/05/24/how-to-test-expressjs-with-jest-and-supertest/">如何使用</a> Albert Gao（<a href="https://twitter.com/albertgao">@albertgao</a>）的<a href="http://www.albertgao.xyz/2017/05/24/how-to-test-expressjs-with-jest-and-supertest/">Jest和</a><a href="https://twitter.com/albertgao">Supertest </a><a href="http://www.albertgao.xyz/2017/05/24/how-to-test-expressjs-with-jest-and-supertest/">测试Express.js</a></li>
+</ul>
+<h2 id="-">盖茨比</h2>
+<ul>
+<li>GatsbyJS docs进行的<a href="https://www.gatsbyjs.org/docs/unit-testing/">单元测试</a></li>
+</ul>
+<h2 id="hapi-js">Hapi.js</h2>
+<ul>
+<li>Niralar（<a href="http://sivasankar.in/">Sivasankar</a>）用笑话<a href="http://niralar.com/testing-hapi-js-with-jest/">测试Hapi.js</a></li>
+</ul>
+<h1 id="-api-https-jestjs-io-docs-zh-hans-api">全部api <a href="https://jestjs.io/docs/zh-Hans/api">https://jestjs.io/docs/zh-Hans/api</a></h1>
+
+          	</article>
+        </div>
+		</div>
+  </body>
+</html>
+<script type="text/javascript" src="toc/js/jquery-1.4.4.min.js"></script>
+<script type="text/javascript" src="toc/js/jquery.ztree.all-3.5.min.js"></script>
+<script type="text/javascript" src="toc/js/ztree_toc.js"></script>
+<script type="text/javascript" src="toc_conf.js"></script>
+
+<SCRIPT type="text/javascript" >
+<!--
+$(document).ready(function(){
+    var css_conf = eval(markdown_panel_style);
+    $('#readme').css(css_conf)
+    
+    var conf = eval(jquery_ztree_toc_opts);
+		$('#tree').ztree_toc(conf);
+});
+//-->
+</SCRIPT>

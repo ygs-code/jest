@@ -1,0 +1,327 @@
+<html>
+  <head>
+	  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>i5ting_ztree_toc:前端集成测jest和Nightwatch框架笔记</title>
+		<link href="toc/style/github-bf51422f4bb36427d391e4b75a1daa083c2d840e.css" media="all" rel="stylesheet" type="text/css"/>
+		<link href="toc/style/github2-d731afd4f624c99a4b19ad69f3083cd6d02b81d5.css" media="all" rel="stylesheet" type="text/css"/>
+		<link href="toc/css/zTreeStyle/zTreeStyle.css" media="all" rel="stylesheet" type="text/css"/>
+	  <style>
+		pre {
+		    counter-reset: line-numbering;
+		    border: solid 1px #d9d9d9;
+		    border-radius: 0;
+		    background: #fff;
+		    padding: 0;
+		    line-height: 23px;
+		    margin-bottom: 30px;
+		    white-space: pre;
+		    overflow-x: auto;
+		    word-break: inherit;
+		    word-wrap: inherit;
+		}
+
+		pre a::before {
+		  content: counter(line-numbering);
+		  counter-increment: line-numbering;
+		  padding-right: 1em; /* space after numbers */
+		  width: 25px;
+		  text-align: right;
+		  opacity: 0.7;
+		  display: inline-block;
+		  color: #aaa;
+		  background: #eee;
+		  margin-right: 16px;
+		  padding: 2px 10px;
+		  font-size: 13px;
+		  -webkit-touch-callout: none;
+		  -webkit-user-select: none;
+		  -khtml-user-select: none;
+		  -moz-user-select: none;
+		  -ms-user-select: none;
+		  user-select: none;
+		}
+
+		pre a:first-of-type::before {
+		  padding-top: 10px;
+		}
+
+		pre a:last-of-type::before {
+		  padding-bottom: 10px;
+		}
+
+		pre a:only-of-type::before {
+		  padding: 10px;
+		}
+
+		.highlight { background-color: #ffffcc } /* RIGHT */
+		</style>
+  </head>
+  <body>
+	  <div>
+				<div style='width:25%;'>
+						<ul id="tree" class="ztree" style='width:100%'>
+
+						</ul>
+				</div>
+        <div id='readme' style='width:70%;margin-left:20%;'>
+          	<article class='markdown-body'>
+            	<h1 id="vue-nightwatch-chrome76-e2e-">Vue + nightwatch + Chrome76进行e2e测试的正确配置（二）</h1>
+<p>vue-cli对nightwatch的整合可以说很完善了，基本上只需要一条命令就能完成安装和配置，然后就可以开始写测试了：</p>
+<pre><code>vue add @vue/e2e-nightwatch
+</code></pre><p>本来一切都很美好，但是前段时间Chrome自动更新到了76版本，然后就出了问题。用vue-cli新建一个项目，新建的项目居然过不了测试！报错如下：</p>
+<pre><code>
+</code></pre><p>打开Windows的命令行，看看是不是chromedriver没有完全退出：</p>
+<pre><code>&gt; tasklist|findstr chromedriver
+chromedriver.exe              9980 Console                    1     14,752 K
+chromedriver.exe             15464 Console                    1     14,672 K
+&gt; taskkill -pid 9980 -pid 15464 -f
+成功: 已终止 PID 为 9980 的进程。
+成功: 已终止 PID 为 15464 的进程。
+
+</code></pre><p>解决完这个问题，再运行一次</p>
+<pre><code>npm install --save-dev
+</code></pre><p>在项目目录下添加nightwatch.config.js添加下下面代码</p>
+<pre><code>// require(&#39;env2&#39;)(&#39;.env&#39;); // optionally store your environment variables in .env 可选地将环境变量存储在.env中
+const seleniumServer = require(&quot;selenium-server&quot;);
+const chromedriver = require(&quot;chromedriver&quot;);
+// const PKG = require(&#39;./package.json&#39;); // so we can get the version of the project 这样我们就可以得到项目的版本
+const SCREENSHOT_PATH = &quot;./test/e2e/screenshot&quot;;
+
+const config = { // we use a nightwatch.conf.js file so we can include comments and helper functions 我们使用了一个nightwatch.conf.js文件，因此我们可以包含注释和帮助函数
+  &quot;src_folders&quot;: [
+    &quot;./test/e2e/specs&quot;     // we use &#39;/test&#39; as the name of our test directory by default. So &#39;test/e2e&#39; for &#39;e2e&#39;. 我们默认使用&#39;/test&#39;作为测试目录的名称。所以&#39;test/e2e&#39;代表&#39;e2e&#39;。
+  ],
+  // &quot;output_folder&quot;: &quot;./node_modules/nightwatch/reports&quot;, // reports (test outcome) output by Nightwatch
+  output_folder: &#39;./test/e2e/reports&#39;, //报告(测试结果)由nightwatch输出
+  custom_assertions_path: [&#39;./test/e2e/custom-assertions&#39;], //自定义断言路径
+  &quot;selenium&quot;: {
+    &quot;start_process&quot;: true,
+    &quot;server_path&quot;: seleniumServer.path,
+    &quot;log_path&quot;: &quot;&quot;,
+    &quot;host&quot;: &quot;127.0.0.1&quot;,
+    &quot;port&quot;: 4444,
+    &quot;cli_args&quot;: {
+      &quot;webdriver.chrome.driver&quot; : chromedriver.path
+    }
+  },
+  &quot;test_workers&quot; : {&quot;enabled&quot; : true, &quot;workers&quot; : &quot;auto&quot;}, // perform tests in parallel where possible 在可能的情况下并行执行测试
+  &quot;test_settings&quot;: {
+    &quot;default&quot;: {
+      &quot;launch_url&quot;: &quot;http://localhost&quot;, // we&#39;re testing a Public or &quot;staging&quot; site on Saucelabs 我们正在Saucelabs上测试一个公共或“临时”站点
+      &quot;selenium_port&quot;: 80,
+      &quot;selenium_host&quot;: &quot;ondemand.saucelabs.com&quot;,
+      &quot;silent&quot;: true,
+      &quot;screenshots&quot;: {
+        &quot;enabled&quot;: true, // save screenshots to this directory (excluded by .gitignore) 将屏幕截图保存到此目录(.gitignore除外)
+        &quot;path&quot;: SCREENSHOT_PATH // 截屏保存的目录
+      },
+      &quot;username&quot; : &quot;${SAUCE_USERNAME}&quot;,     // if you want to use Saucelabs remember to 如果你想用酱汁，记得要用
+      &quot;access_key&quot; : &quot;${SAUCE_ACCESS_KEY}&quot;, // export your environment variables (see readme) 导出环境变量(参见readme)
+      &quot;globals&quot;: {
+        &quot;waitForConditionTimeout&quot;: 10000    // wait for content on the page before continuing 等待页面上的内容，然后继续
+      }
+    },
+    &quot;local&quot;: { //环境参数
+      &quot;launch_url&quot;: &quot;http://localhost&quot;,
+      &quot;selenium_port&quot;: 4444,
+      &quot;selenium_host&quot;: &quot;127.0.0.1&quot;,
+      &quot;silent&quot;: true,
+      &quot;screenshots&quot;: {
+        &quot;enabled&quot;: true, // save screenshots taken here 保存截图
+        &quot;path&quot;: SCREENSHOT_PATH // 路径 
+      }, // this allows us to control the 这让我们能够控制
+      &quot;globals&quot;: {
+        &quot;waitForConditionTimeout&quot;: 15000 // on localhost sometimes internet is slow so wait... 在本地主机上，有时互联网很慢，所以等等…
+      },
+      &quot;desiredCapabilities&quot;: {
+        &quot;browserName&quot;: &quot;chrome&quot;,
+        &quot;chromeOptions&quot;: {
+          // 浏览器参数
+          // &quot;args&quot;: [
+          //   `Mozilla/5.0 (iPhone; CPU iPhone OS 5_0 like Mac OS X) AppleWebKit/534.46
+          //   (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3`,
+          //   &quot;--window-size=640,1136&quot; // iphone 5
+          // ],
+          &quot;w3c&quot;: false
+        },
+        &quot;javascriptEnabled&quot;: true,
+        &quot;acceptSslCerts&quot;: true
+      }
+    },
+    &quot;chrome&quot;: { // your local Chrome browser (chromedriver)
+      &quot;desiredCapabilities&quot;: {
+        &quot;browserName&quot;: &quot;chrome&quot;,
+        &quot;javascriptEnabled&quot;: true,
+        &quot;acceptSslCerts&quot;: true
+      }
+    },
+    // 先注释 mac 系统
+    // &quot;chromemac&quot;: { // browsers used on saucelabs:
+    //   &quot;desiredCapabilities&quot;: {
+    //     &quot;browserName&quot;: &quot;chrome&quot;,
+    //     &quot;platform&quot;: &quot;OS X 10.11&quot;,
+    //     &quot;version&quot;: &quot;47&quot;
+    //   }
+    // },
+   // 先注释ie
+    // &quot;ie11&quot;: {
+    //   &quot;desiredCapabilities&quot;: {
+    //     &quot;browserName&quot;: &quot;internet explorer&quot;,
+    //     &quot;platform&quot;: &quot;Windows 10&quot;,
+    //     &quot;version&quot;: &quot;11.0&quot;
+    //   }
+    // },
+    &quot;firefox&quot; : {
+      &quot;desiredCapabilities&quot;: {
+        &quot;platform&quot;: &quot;XP&quot;,
+        &quot;browserName&quot;: &quot;firefox&quot;,
+        &quot;version&quot;: &quot;33&quot;
+      }
+    }, 
+    // 先注释 Windows 7
+    // &quot;internet_explorer_10&quot; : {
+    //   &quot;desiredCapabilities&quot;: {
+    //     &quot;platform&quot;: &quot;Windows 7&quot;,
+    //     &quot;browserName&quot;: &quot;internet explorer&quot;,
+    //     &quot;version&quot;: &quot;10&quot;
+    //   }
+    // },
+    // 先注释 安卓系统
+    // &quot;android_s4_emulator&quot;: {
+    //   &quot;desiredCapabilities&quot;: {
+    //     &quot;browserName&quot;: &quot;android&quot;,
+    //     &quot;deviceOrientation&quot;: &quot;portrait&quot;,
+    //     &quot;deviceName&quot;: &quot;Samsung Galaxy S4 Emulator&quot;,
+    //     &quot;version&quot;: &quot;4.4&quot;
+    //   }
+    // },
+      // 苹果6
+    // &quot;iphone_6_simulator&quot;: {
+    //   &quot;desiredCapabilities&quot;: {
+    //     &quot;browserName&quot;: &quot;iPhone&quot;,
+    //     &quot;deviceOrientation&quot;: &quot;portrait&quot;,
+    //     &quot;deviceName&quot;: &quot;iPhone 6&quot;,
+    //     &quot;platform&quot;: &quot;OSX 10.10&quot;,
+    //     &quot;version&quot;: &quot;8.4&quot;
+    //   }
+    // }
+  }
+}
+module.exports = config;
+
+function padLeft (count) { // theregister.co.uk/2016/03/23/npm_left_pad_chaos/
+  return count &lt; 10 ? &#39;0&#39; + count : count.toString();
+}
+
+var FILECOUNT = 0; // &quot;global&quot; screenshot file count “全局”截图文件计数
+/**
+ * The default is to save screenshots to the root of your project even though
+ * there is a screenshots path in the config object above! ... so we need a
+ * function that returns the correct path for storing our screenshots.
+ * While we&#39;re at it, we are adding some meta-data to the filename, specifically
+ * the Platform/Browser where the test was run and the test (file) name.
+ *
+ *  *默认是将截图保存到项目的根目录
+在上面的配置对象中有一个截屏路径!…所以我们需要一个
+函数返回存储屏幕截图的正确路径。
+*在此过程中，我们会向文件名中添加一些元数据
+*运行测试的平台/浏览器和测试(文件)名称。
+ */
+function imgpath (browser) {
+  var a = browser.options.desiredCapabilities;
+  var meta = [a.platform];
+  meta.push(a.browserName ? a.browserName : &#39;any&#39;);
+  meta.push(a.version ? a.version : &#39;any&#39;);
+  meta.push(a.name); // this is the test filename so always exists. 这是测试文件名，所以总是存在。
+  var metadata = meta.join(&#39;~&#39;).toLowerCase().replace(/ /g, &#39;&#39;);
+  return SCREENSHOT_PATH + metadata + &#39;_&#39; + padLeft(FILECOUNT++) + &#39;_&#39;;
+}
+
+module.exports.imgpath = imgpath;
+module.exports.SCREENSHOT_PATH = SCREENSHOT_PATH;
+
+</code></pre><p>runner.js 修改</p>
+<pre><code>// 1. start the dev server using production config
+process.env.NODE_ENV = &#39;testing&#39;
+
+const webpack = require(&#39;webpack&#39;)
+const DevServer = require(&#39;webpack-dev-server&#39;)
+
+const webpackConfig = require(&#39;../../build/webpack.prod.conf&#39;)
+const devConfigPromise = require(&#39;../../build/webpack.dev.conf&#39;)
+
+let server
+
+devConfigPromise.then(devConfig =&gt; {
+  const devServerOptions = devConfig.devServer
+  const compiler = webpack(webpackConfig)
+  server = new DevServer(compiler, devServerOptions)
+  const port = devServerOptions.port
+  const host = devServerOptions.host
+  return server.listen(port, host)
+})
+.then(() =&gt; {
+  // 2. run the nightwatch test suite against it
+  // to run in additional browsers:
+  //    1. add an entry in test/e2e/nightwatch.conf.js under &quot;test_settings&quot;
+  //    2. add it to the --env flag below
+  // or override the environment flag, for example: `npm run e2e -- --env chrome,firefox`
+  // For more information on Nightwatch&#39;s config file, see
+  // http://nightwatchjs.org/guide#settings-file
+  // let opts = process.argv.slice(2)
+  // console.log(&#39;process.argv&#39;,)
+  // if (opts.indexOf(&#39;--config&#39;) === -1) {
+  //   console.log(&#39;--config&#39;)
+  //     // opts = opts.concat([&#39;--config&#39;, &#39;test/e2e/nightwatch.conf.js&#39;])
+  // }
+  // if (opts.indexOf(&#39;--env&#39;) === -1) {
+  //   console.log(&#39;--env&#39;)
+  //       opts = opts.concat([&#39;--env&#39;, &#39;chrome&#39;])
+  // }
+
+ //注释掉上面代码，然后修改成这样
+   let opts =  [&#39;--env&#39;, &#39;local&#39;] // 启动环境参数
+
+  const spawn = require(&#39;cross-spawn&#39;)
+  // 运行cmd命令 修改为nightwatch启动命令
+  const runner = spawn(&#39;nightwatch&#39;, opts, { stdio: &#39;inherit&#39; })
+
+  runner.on(&#39;exit&#39;, function (code) {
+    server.close()
+    process.exit(code)
+  })
+
+  runner.on(&#39;error&#39;, function (err) {
+    server.close()
+    throw err
+  })
+})
+
+</code></pre><p>这下终于解决了。如果还是不清楚……可以看看示例项目</p>
+<h1 id="-chromedrvier-python">如下方法可以用来杀掉，全部的chromedrvier和python</h1>
+<p>TASKKILL /F /IM chromedriver.exe /T
+TASKKILL /F /IM python.exe /T</p>
+<p>很多运行自动化程序不正常，是因为这两个搞的鬼，可以执行前把这些都干掉</p>
+<h2 id="-"> </h2>
+
+          	</article>
+        </div>
+		</div>
+  </body>
+</html>
+<script type="text/javascript" src="toc/js/jquery-1.4.4.min.js"></script>
+<script type="text/javascript" src="toc/js/jquery.ztree.all-3.5.min.js"></script>
+<script type="text/javascript" src="toc/js/ztree_toc.js"></script>
+<script type="text/javascript" src="toc_conf.js"></script>
+
+<SCRIPT type="text/javascript" >
+<!--
+$(document).ready(function(){
+    var css_conf = eval(markdown_panel_style);
+    $('#readme').css(css_conf)
+    
+    var conf = eval(jquery_ztree_toc_opts);
+		$('#tree').ztree_toc(conf);
+});
+//-->
+</SCRIPT>
